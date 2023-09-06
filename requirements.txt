@@ -1,0 +1,5 @@
+diffusers
+accelerate
+transformers
+xformers
+basicsr
