@@ -1021,7 +1021,7 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         return UNet2DConditionOutput(sample=sample)
 
     @classmethod
-    def from_pretrained_(cls, pretrained_model_path, subfolder=None, **kwargs):
+    def from_pretrained_orig(cls, pretrained_model_path, subfolder=None, **kwargs):
         if subfolder is not None:
             pretrained_model_path = os.path.join(pretrained_model_path, subfolder)
 

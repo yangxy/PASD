@@ -3,3 +3,5 @@ accelerate
 transformers
 xformers
 basicsr
+ultralytics
+salesforce-lavis

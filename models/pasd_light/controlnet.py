@@ -230,7 +230,7 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalControlnetMixin):
         conditioning_embedding_out_channels: Optional[Tuple[int]] = (16, 32, 96, 256),
         global_pool_conditions: bool = False,
         addition_embed_type_num_heads=64,
-        return_rgbs: bool = False,
+        return_rgbs: bool = True,
         use_rrdb: bool = False,
     ):
         super().__init__()
@@ -656,8 +656,7 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalControlnetMixin):
         encoder_hidden_states: torch.Tensor,
         controlnet_cond: torch.FloatTensor,
         fg_mask: Optional[torch.FloatTensor] = None,
-        conditioning_scale_fg: float = 1.0,
-        conditioning_scale_bg: float = 1.0,
+        conditioning_scale: float = 1.0,
         class_labels: Optional[torch.Tensor] = None,
         timestep_cond: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
@@ -830,14 +829,15 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalControlnetMixin):
         if guess_mode and not self.config.global_pool_conditions:
             scales = torch.logspace(-1, 0, len(down_block_res_samples) + 1, device=sample.device)  # 0.1 to 1.0
 
-            scales = scales * conditioning_scale_fg
+            scales = scales * conditioning_scale
             down_block_res_samples = [sample * scale for sample, scale in zip(down_block_res_samples, scales)]
             mid_block_res_sample = mid_block_res_sample * scales[-1]  # last one
         else:
             if fg_mask is None:
-                down_block_res_samples = [sample * conditioning_scale_fg for sample in down_block_res_samples]
-                mid_block_res_sample = mid_block_res_sample * conditioning_scale_fg
+                down_block_res_samples = [sample * conditioning_scale for sample in down_block_res_samples]
+                mid_block_res_sample = mid_block_res_sample * conditioning_scale
             else:
+                conditioning_scale_fg, conditioning_scale_bg = 1.5, 0.6
                 down_block_masks = [torch.zeros_like(sample) + conditioning_scale_bg for i, sample in enumerate(down_block_res_samples)]
                 mid_block_mask = torch.zeros_like(mid_block_res_sample) + conditioning_scale_bg
 
