@@ -25,7 +25,7 @@ def exists(x):
 def identity(x):
     return x
 
-def load_dreambooth_lora(unet, vae=None, model_path=None, model_base=""):
+def load_dreambooth_lora(unet, vae=None, model_path=None, alpha=1.0, model_base=""):
     if model_path is None: return unet
     
     if model_path.endswith(".ckpt"):
@@ -46,6 +46,9 @@ def load_dreambooth_lora(unet, vae=None, model_path=None, model_base=""):
                     base_state_dict[key] = f.get_tensor(key)
                                  
     converted_unet_checkpoint = convert_ldm_unet_checkpoint(base_state_dict, unet.config)
+    unet_state_dict = unet.state_dict()
+    for key in converted_unet_checkpoint:
+        converted_unet_checkpoint[key] = alpha * converted_unet_checkpoint[key] + (1.0-alpha) * unet_state_dict[key]
     unet.load_state_dict(converted_unet_checkpoint, strict=False)
 
     if vae is not None:

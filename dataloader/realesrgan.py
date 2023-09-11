@@ -15,7 +15,7 @@ from basicsr.utils import DiffJPEG, USMSharp, img2tensor, tensor2img
 from basicsr.utils.img_process_util import filter2D
 from basicsr.data.degradations import random_add_gaussian_noise_pt, random_add_poisson_noise_pt
 from torchvision.transforms.functional import (adjust_brightness, adjust_contrast, adjust_hue, adjust_saturation,
-                                               normalize)
+                                               normalize, rgb_to_grayscale)
 
 cur_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -107,7 +107,7 @@ class RealESRGAN_degradation(object):
     def random_augment(self, img_gt):
         # random horizontal flip
         img_gt, status = augment(img_gt, hflip=True, rotation=False, return_status=True)
-
+        """
         # random color jitter 
         if np.random.uniform() < self.opt['color_jitter_prob']:
             jitter_val = np.random.uniform(-shift, shift, 3).astype(np.float32)
@@ -119,9 +119,9 @@ class RealESRGAN_degradation(object):
             #img_gt = cv2.cvtColor(img_gt, cv2.COLOR_BGR2GRAY)
             img_gt = cv2.cvtColor(img_gt, cv2.COLOR_RGB2GRAY)
             img_gt = np.tile(img_gt[:, :, None], [1, 1, 3])
-
+        """
         # BGR to RGB, HWC to CHW, numpy to tensor
-        img_gt = img2tensor([img_gt], bgr2rgb=True, float32=True)[0].unsqueeze(0)
+        img_gt = img2tensor([img_gt], bgr2rgb=False, float32=True)[0].unsqueeze(0)
 
         return img_gt
 
@@ -280,6 +280,16 @@ class RealESRGAN_degradation(object):
             mode = random.choice(['area', 'bilinear', 'bicubic'])
             out = F.interpolate(out, size=(ori_h // scale_final, ori_w // scale_final), mode=mode)
             out = filter2D(out, sinc_kernel)
+
+        if np.random.uniform() < self.opt['gray_prob']:
+            out = rgb_to_grayscale(out, num_output_channels=1)
+
+        if np.random.uniform() < self.opt['color_jitter_prob']:
+            brightness = self.opt.get('brightness', (0.5, 1.5))
+            contrast = self.opt.get('contrast', (0.5, 1.5))
+            saturation = self.opt.get('saturation', (0, 1.5))
+            hue = self.opt.get('hue', (-0.1, 0.1))
+            out = self.color_jitter_pt(out, brightness, contrast, saturation, hue)
 
         if resize_bak:
             mode = random.choice(['area', 'bilinear', 'bicubic'])

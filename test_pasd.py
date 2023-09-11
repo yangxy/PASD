@@ -24,7 +24,6 @@ from myutils.wavelet_color_fix import wavelet_color_fix
 #from annotator.retinaface import RetinaFaceDetection
 
 sys.path.append('PASD')
-os.system("export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python") # in case of need
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
 check_min_version("0.18.0.dev0")
@@ -49,9 +48,9 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
 
     if args.use_personalized_model and args.personalized_model_path is not None:
         if os.path.isfile(args.personalized_model_path):
-            unet, vae = load_dreambooth_lora(unet, vae, args.personalized_model_path)
+            unet, vae = load_dreambooth_lora(unet, vae, f"checkpoints/personalized_models/{args.personalized_model_path}", alpha=args.blending_alpha)
         else:
-            unet = UNet2DConditionModel.from_pretrained_orig(args.pretrained_model_path, subfolder=f"{args.personalized_model_path}") # unet_disney3d
+            unet = UNet2DConditionModel.from_pretrained_orig(args.pretrained_model_path, subfolder=f"{args.personalized_model_path}") # unet_disney
 
     # Freeze vae and text_encoder
     vae.requires_grad_(False)
@@ -91,7 +90,7 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     return validation_pipeline
 
 def load_high_level_net(args, device='cuda'):
-    if args.high_level_info == "class":
+    if args.high_level_info == "classification":
         from torchvision.models import resnet50, ResNet50_Weights
         weights = ResNet50_Weights.DEFAULT
         preprocess = weights.transforms()
@@ -112,7 +111,7 @@ def load_high_level_net(args, device='cuda'):
 def get_validation_prompt(args, image, model, preprocess, category, device='cuda'):
     validation_prompt = ""
 
-    if args.high_level_info == "class":
+    if args.high_level_info == "classification":
         batch = preprocess(image).unsqueeze(0)
         prediction = model(batch).squeeze(0).softmax(0)
         class_id = prediction.argmax().item()
@@ -135,12 +134,11 @@ def get_validation_prompt(args, image, model, preprocess, category, device='cuda
             validation_prompt += f"{count[name]} {name}, "
         validation_prompt = validation_prompt if args.prompt=="" else f"{args.prompt}, {validation_prompt}"
     elif args.high_level_info == "caption":
-        # export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
         image = preprocess["eval"](image).unsqueeze(0).to(device)
         caption = model.generate({"image": image}, num_captions=1)[0]
         validation_prompt = f"{caption}, {args.prompt}"
     else:
-        validation_prompt = args.prompt
+        validation_prompt = "" if args.prompt=="" else f"{args.prompt}, "
     
     return validation_prompt
 
@@ -204,6 +202,7 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
             validation_image = validation_image.resize((validation_image.size[0]*rscale, validation_image.size[1]*rscale))
             validation_image = validation_image.resize((validation_image.size[0]//8*8, validation_image.size[1]//8*8))
             width, height = validation_image.size
+            resize_flag = True #
 
             try:
                 image = pipeline(
@@ -237,10 +236,10 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-v1-5")
-    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd/checkpoint-100000")
-    parser.add_argument("--personalized_model_path", type=str, default="checkpoints/personalized_models/majicmixRealistic_v6.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, Realistic_Vision_V5.1.safetensors
+    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_rrdb/checkpoint-100000")
+    parser.add_argument("--personalized_model_path", type=str, default="toonyou_beta3.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr")
-    parser.add_argument('--high_level_info', choices=['class', 'detection', 'caption'], nargs='?', default='')
+    parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='')
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k")
     parser.add_argument("--negative_prompt", type=str, default="dotted, noise, blur, lowres, smooth")
@@ -249,12 +248,13 @@ if __name__ == "__main__":
     parser.add_argument("--mixed_precision", type=str, default="fp16") # no/fp16/bf16
     parser.add_argument("--guidance_scale", type=float, default=7.5)
     parser.add_argument("--conditioning_scale", type=float, default=1.0)
+    parser.add_argument("--blending_alpha", type=float, default=1.0)
     parser.add_argument("--num_inference_steps", type=int, default=20)
     parser.add_argument("--process_size", type=int, default=768)
-    parser.add_argument("--vae_tiled_size", type=int, default=224)
+    parser.add_argument("--vae_tiled_size", type=int, default=224) # for 24G
     parser.add_argument("--upscale", type=int, default=4)
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")
-    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     main(args)

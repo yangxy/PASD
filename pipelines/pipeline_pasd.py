@@ -678,7 +678,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                 image = np.concatenate(image, axis=0)
                 image = np.array(image).astype(np.float32) / 255.0
                 image = image.transpose(0, 3, 1, 2)
-                image = torch.from_numpy(image)
+                image = torch.from_numpy(image)#.flip(1)
             elif isinstance(image[0], torch.Tensor):
                 image = torch.cat(image, dim=0)
 
@@ -1025,6 +1025,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                         return_dict=False,
                     )[0]
                 else:
+                    #print(latent_model_input.shape, controlnet_latent_model_input.shape, image.shape)
                     _, _, h, w = latent_model_input.size()
                     tile_size, tile_overlap = 96, 32
                     tile_weights = self._gaussian_weights(tile_size, tile_size, 1)
@@ -1075,14 +1076,15 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                                 input_list_t = torch.cat(input_list, dim=0)
                                 cond_list_t = torch.cat(cond_list, dim=0)
                                 img_list_t = torch.cat(img_list, dim=0)
-                                #print(input_list_t.shape, cond_list_t.shape, img_list_t.shape)
+                                #print(input_list_t.shape, cond_list_t.shape, img_list_t.shape, fg_mask_list_t.shape)
 
                                 _, down_block_res_samples, mid_block_res_sample = self.controlnet(
                                     cond_list_t,
                                     t,
                                     encoder_hidden_states=controlnet_prompt_embeds,
                                     controlnet_cond=img_list_t,
-                                    conditioning_scale=controlnet_conditioning_scale,
+                                    #conditioning_scale=controlnet_conditioning_scale,
+                                    conditioning_scale=conditioning_scale,
                                     guess_mode=guess_mode,
                                     return_dict=False,
                                 )
@@ -1163,7 +1165,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
 
         has_nsfw_concept = None
         if not output_type == "latent":
-            image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False)[0]
+            image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False)[0]#.flip(1)
             #image, has_nsfw_concept = self.run_safety_checker(image, device, prompt_embeds.dtype)
         else:
             image = latents

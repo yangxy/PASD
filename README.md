@@ -6,9 +6,12 @@
 _<sup>1</sup>[DAMO Academy, Alibaba Group](https://damo.alibaba.com), Hangzhou, China_  
 _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](http://www.comp.polyu.edu.hk), Hong Kong, China_
 
-## pre-trained models will be released soon.
+## Our model can restore old photos. Find more by yourself.
+<img src="samples/629e4da70703193b.png" width="390px"/> <img src="samples/629e4da70703193b_out.png" width="390px"/>
 
 ## News
+(2023-09-11) Upload pre-trained models.
+
 (2023-09-07) Upload source codes.
 
 ## Usage
@@ -18,7 +21,7 @@ git clone https://github.com/yangxy/PASD.git
 cd PASD
 ```
 
-- Download SD1.5 models from huggingface and put them into ``checkpoints/stable-diffusion-v1-5``.
+- Download SD1.5 models from [huggingface](https://huggingface.co/runwayml/stable-diffusion-v1-5) and put them into ``checkpoints/stable-diffusion-v1-5``. 
 
 - Prepare training datasets. Please check ``dataloader/localdataset.py`` and ``dataloader/webdataset.py`` carefully and set the paths correctly. We highly recommend to use ``dataloader/webdataset.py``.
 
@@ -29,10 +32,17 @@ bash ./train_pasd.sh
 if you want to train pasd_light, use ``--use_pasd_light``.
 
 - Test PASD.
+
+Download our pre-trained models [pasd](http://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd.zip) | [pasd_rrdb](http://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_rrdb.zip) | [pasd_light](http://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light.zip) | [pasd_light_rrdb](http://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light_rrdb.zip), and put them into ``runs/``. 
+
 ```bash
-python test_pasd.py
+python test_pasd.py # --use_pasd_light
 ```
-use ``--use_personalized_model``, ``--use_pasd_light`` in case of need. Please read the arguments in ``test_pasd.py`` carefully. We adopt the tiled vae method proposed by [multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111) to save memory.
+Please read the arguments in ``test_pasd.py`` carefully. We adopt the tiled vae method proposed by [multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111) to save GPU memory.
+
+Please try ``--use_personalized_models`` for personalized stylizetion and old-photo resoration. Set ``--conditioning_scale`` for different stylized strength. We use personalized models including [ToonYou](https://civitai.com/models/30240/), [majicMIX realistic](https://civitai.com/models/43331/) and [modern disney style](https://huggingface.co/nitrosocke/mo-di-diffusion)(``unet`` only). You can download more from communities and put them into ``checkpoints/personalized_models`` or ``checkpoints/stable-diffusion-v1-5``.
+
+If the default setting does not yield good results, try different ``--seed``, ``--prompt``, ``--upscale``, or ``--high_level_info`` to get better performance.
 
 ## Citation
 If our work is useful for your research, please consider citing:
