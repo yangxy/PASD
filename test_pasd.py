@@ -46,11 +46,12 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     unet = UNet2DConditionModel.from_pretrained(args.pasd_model_path, subfolder="unet")
     controlnet = ControlNetModel.from_pretrained(args.pasd_model_path, subfolder="controlnet")
 
+    personalized_model_root = "checkpoints/personalized_models"
     if args.use_personalized_model and args.personalized_model_path is not None:
-        if os.path.isfile(args.personalized_model_path):
-            unet, vae = load_dreambooth_lora(unet, vae, f"checkpoints/personalized_models/{args.personalized_model_path}", alpha=args.blending_alpha)
+        if os.path.isfile(f"{personalized_model_root}/{args.personalized_model_path}"):
+            unet, vae = load_dreambooth_lora(unet, vae, f"{personalized_model_root}/{args.personalized_model_path}", alpha=args.blending_alpha)
         else:
-            unet = UNet2DConditionModel.from_pretrained_orig(args.pretrained_model_path, subfolder=f"{args.personalized_model_path}") # unet_disney
+            unet = UNet2DConditionModel.from_pretrained_orig(personalized_model_root, subfolder=f"{args.personalized_model_path}") # unet_disney
 
     # Freeze vae and text_encoder
     vae.requires_grad_(False)
@@ -236,14 +237,14 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-v1-5")
-    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_rrdb/checkpoint-100000")
-    parser.add_argument("--personalized_model_path", type=str, default="toonyou_beta3.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
+    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd/checkpoint-100000")
+    parser.add_argument("--personalized_model_path", type=str, default="majicmixRealistic_v6.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr")
     parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='')
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k")
     parser.add_argument("--negative_prompt", type=str, default="dotted, noise, blur, lowres, smooth")
-    parser.add_argument("--image_path", type=str, default="examples/RealSRSet")
+    parser.add_argument("--image_path", type=str, default="examples/")
     parser.add_argument("--output_dir", type=str, default="output")
     parser.add_argument("--mixed_precision", type=str, default="fp16") # no/fp16/bf16
     parser.add_argument("--guidance_scale", type=float, default=7.5)
@@ -255,6 +256,6 @@ if __name__ == "__main__":
     parser.add_argument("--upscale", type=int, default=4)
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
     main(args)

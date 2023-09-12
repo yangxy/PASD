@@ -6,8 +6,21 @@
 _<sup>1</sup>[DAMO Academy, Alibaba Group](https://damo.alibaba.com), Hangzhou, China_  
 _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](http://www.comp.polyu.edu.hk), Hong Kong, China_
 
-## Our model can restore old photos. Find more by yourself.
-<img src="samples/629e4da70703193b.png" width="390px"/> <img src="samples/629e4da70703193b_out.png" width="390px"/>
+## Our model can restore old photos. Explore more by yourself.
+
+## Old photo restoration
+<img src="samples/629e4da70703193b_comp.png" width="390px"/> <img src="samples/27d38eeb2dbbe7c9_comp.png" width="390px"/>
+
+<img src="samples/2e512b688ef48a43_comp.png" width="390px"/> <img src="samples/f125ee5838471073_comp.png" width="390px"/>
+
+## Realistic Image SR
+<img src="samples/Lincoln_comp.png" width="390px"/> <img src="samples/building_comp.png" width="390px"/>
+
+## Personalized Stylization
+<img src="samples/000020x2_comp.png" width="390px"/> <img src="samples/000067x2_comp.png" width="390px"/>
+
+## Colorization
+<img src="samples/000001x2_comp.png" width="390px"/> <img src="samples/000080x2_comp.png" width="390px"/>
 
 ## News
 (2023-09-11) Upload pre-trained models.
@@ -36,13 +49,15 @@ if you want to train pasd_light, use ``--use_pasd_light``.
 Download our pre-trained models [pasd](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd.zip) | [pasd_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_rrdb.zip) | [pasd_light](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light.zip) | [pasd_light_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light_rrdb.zip), and put them into ``runs/``. 
 
 ```bash
-python test_pasd.py # --use_pasd_light
+python test_pasd.py # --use_pasd_light --use_personalized_model
 ```
 Please read the arguments in ``test_pasd.py`` carefully. We adopt the tiled vae method proposed by [multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111) to save GPU memory.
 
-Please try ``--use_personalized_models`` for personalized stylizetion and old-photo resoration. Set ``--conditioning_scale`` for different stylized strength. We use personalized models including [ToonYou](https://civitai.com/models/30240/), [majicMIX realistic](https://civitai.com/models/43331/) and [modern disney style](https://huggingface.co/nitrosocke/mo-di-diffusion)(``unet`` only). You can download more from communities and put them into ``checkpoints/personalized_models`` or ``checkpoints/stable-diffusion-v1-5``.
+Please try ``--use_personalized_model`` for personalized stylizetion, old photo restoration and real-world SR. Set ``--conditioning_scale`` for different stylized strength. 
 
-If the default setting does not yield good results, try different ``--seed``, ``--prompt``, ``--upscale``, or ``--high_level_info`` to get better performance.
+We use personalized models including [majicMIX realistic](https://civitai.com/models/43331/)(for SR and restoration), [ToonYou](https://civitai.com/models/30240/)(for stylization) and [modern disney style](https://huggingface.co/nitrosocke/mo-di-diffusion)(``unet`` only, for stylization). You can download more from communities and put them into ``checkpoints/personalized_models``.
+
+If the default setting does not yield good results, try different ``--pasd_model_path``, ``--seed``, ``--prompt``, ``--upscale``, or ``--high_level_info`` to get better performance.
 
 ## Citation
 If our work is useful for your research, please consider citing:

@@ -1003,9 +1003,9 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                         return_dict=False,
                     )
                     #if rgbs is not None:
-                        #save_image(rgbs[0][1], 'out1.png', normalize=True, range=[-1,1])
-                        #save_image(rgbs[1][1], 'out2.png', normalize=True, range=[-1,1])
-                        #save_image(rgbs[2][1], 'out3.png', normalize=True, range=[-1,1])
+                    #    save_image(rgbs[0][1], 'out1.png', normalize=True, range=[-1,1])
+                    #    save_image(rgbs[1][1], 'out2.png', normalize=True, range=[-1,1])
+                    #    save_image(rgbs[2][1], 'out3.png', normalize=True, range=[-1,1])
 
                     if guess_mode and do_classifier_free_guidance:
                         # Infered ControlNet only for the conditional batch.
