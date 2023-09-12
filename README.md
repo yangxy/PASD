@@ -23,6 +23,8 @@ _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](htt
 <img src="samples/000001x2_comp.png" width="390px"/> <img src="samples/000080x2_comp.png" width="390px"/>
 
 ## News
+(2023-09-12) Add Gradio demo.
+
 (2023-09-11) Upload pre-trained models.
 
 (2023-09-07) Upload source codes.
@@ -58,6 +60,11 @@ Please try ``--use_personalized_model`` for personalized stylizetion, old photo 
 We use personalized models including [majicMIX realistic](https://civitai.com/models/43331/)(for SR and restoration), [ToonYou](https://civitai.com/models/30240/)(for stylization) and [modern disney style](https://huggingface.co/nitrosocke/mo-di-diffusion)(``unet`` only, for stylization). You can download more from communities and put them into ``checkpoints/personalized_models``.
 
 If the default setting does not yield good results, try different ``--pasd_model_path``, ``--seed``, ``--prompt``, ``--upscale``, or ``--high_level_info`` to get better performance.
+
+- Gradio Demo
+```bash
+python gradio_pasd.py
+```
 
 ## Citation
 If our work is useful for your research, please consider citing:
