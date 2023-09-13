@@ -6,21 +6,21 @@
 _<sup>1</sup>[DAMO Academy, Alibaba Group](https://damo.alibaba.com), Hangzhou, China_  
 _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](http://www.comp.polyu.edu.hk), Hong Kong, China_
 
-## Our model can restore old photos. Explore more by yourself.
-
-## Old photo restoration
-<img src="samples/629e4da70703193b_comp.png" width="390px"/> <img src="samples/27d38eeb2dbbe7c9_comp.png" width="390px"/>
-
-<img src="samples/2e512b688ef48a43_comp.png" width="390px"/> <img src="samples/f125ee5838471073_comp.png" width="390px"/>
+## Our model can do various tasks. Hope you can enjoy it.
 
 ## Realistic Image SR
-<img src="samples/Lincoln_comp.png" width="390px"/> <img src="samples/building_comp.png" width="390px"/>
+<img src="samples/Lincoln.gif" width="390px"/> <img src="samples/building.gif" width="390px"/>
+
+## Old photo restoration
+<img src="samples/629e4da70703193b.gif" width="390px"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px"/>
+
+<img src="samples/2e512b688ef48a43.gif" width="390px"/> <img src="samples/f125ee5838471073.gif" width="390px"/>
 
 ## Personalized Stylization
-<img src="samples/000020x2_comp.png" width="390px"/> <img src="samples/000067x2_comp.png" width="390px"/>
+<img src="samples/000020x2.gif" width="390px"/> <img src="samples/000067x2.gif" width="390px"/>
 
 ## Colorization
-<img src="samples/000001x2_comp.png" width="390px"/> <img src="samples/000080x2_comp.png" width="390px"/>
+<img src="samples/000001x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
 (2023-09-12) Add Gradio demo.
