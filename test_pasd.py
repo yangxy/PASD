@@ -49,7 +49,8 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     personalized_model_root = "checkpoints/personalized_models"
     if args.use_personalized_model and args.personalized_model_path is not None:
         if os.path.isfile(f"{personalized_model_root}/{args.personalized_model_path}"):
-            unet, vae = load_dreambooth_lora(unet, vae, f"{personalized_model_root}/{args.personalized_model_path}", alpha=args.blending_alpha)
+            unet, vae, text_encoder = load_dreambooth_lora(unet, vae, text_encoder, f"{personalized_model_root}/{args.personalized_model_path}", 
+                                                           blending_alpha=args.blending_alpha, multiplier=args.multiplier)
         else:
             unet = UNet2DConditionModel.from_pretrained_orig(personalized_model_root, subfolder=f"{args.personalized_model_path}") # unet_disney
 
@@ -58,6 +59,20 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     text_encoder.requires_grad_(False)
     unet.requires_grad_(False)
     controlnet.requires_grad_(False)
+
+    # For mixed precision training we cast the text_encoder and vae weights to half-precision
+    # as these models are only used for inference, keeping weights in full precision is not required.
+    weight_dtype = torch.float32
+    if accelerator.mixed_precision == "fp16":
+        weight_dtype = torch.float16
+    elif accelerator.mixed_precision == "bf16":
+        weight_dtype = torch.bfloat16
+
+    # Move text_encode and vae to gpu and cast to weight_dtype
+    text_encoder.to(accelerator.device, dtype=weight_dtype)
+    vae.to(accelerator.device, dtype=weight_dtype)
+    unet.to(accelerator.device, dtype=weight_dtype)
+    controlnet.to(accelerator.device, dtype=weight_dtype)
 
     if enable_xformers_memory_efficient_attention:
         if is_xformers_available():
@@ -73,20 +88,6 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     )
     #validation_pipeline.enable_vae_tiling()
     validation_pipeline._init_tiled_vae(decoder_tile_size=args.vae_tiled_size)
-
-    # For mixed precision training we cast the text_encoder and vae weights to half-precision
-    # as these models are only used for inference, keeping weights in full precision is not required.
-    weight_dtype = torch.float32
-    if accelerator.mixed_precision == "fp16":
-        weight_dtype = torch.float16
-    elif accelerator.mixed_precision == "bf16":
-        weight_dtype = torch.bfloat16
-
-    # Move text_encode and vae to gpu and cast to weight_dtype
-    text_encoder.to(accelerator.device, dtype=weight_dtype)
-    vae.to(accelerator.device, dtype=weight_dtype)
-    unet.to(accelerator.device, dtype=weight_dtype)
-    controlnet.to(accelerator.device, dtype=weight_dtype)
 
     return validation_pipeline
 
@@ -238,18 +239,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-v1-5")
     parser.add_argument("--pasd_model_path", type=str, default="runs/pasd/checkpoint-100000")
-    parser.add_argument("--personalized_model_path", type=str, default="majicmixRealistic_v6.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
+    parser.add_argument("--personalized_model_path", type=str, default="disney.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr")
     parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='')
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k")
     parser.add_argument("--negative_prompt", type=str, default="dotted, noise, blur, lowres, smooth")
-    parser.add_argument("--image_path", type=str, default="examples/")
+    parser.add_argument("--image_path", type=str, default="examples/dog.png")
     parser.add_argument("--output_dir", type=str, default="output")
     parser.add_argument("--mixed_precision", type=str, default="fp16") # no/fp16/bf16
     parser.add_argument("--guidance_scale", type=float, default=7.5)
     parser.add_argument("--conditioning_scale", type=float, default=1.0)
     parser.add_argument("--blending_alpha", type=float, default=1.0)
+    parser.add_argument("--multiplier", type=float, default=0.6)
     parser.add_argument("--num_inference_steps", type=int, default=20)
     parser.add_argument("--process_size", type=int, default=768)
     parser.add_argument("--vae_tiled_size", type=int, default=224) # for 24G

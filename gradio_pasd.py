@@ -48,7 +48,7 @@ text_encoder.requires_grad_(False)
 unet.requires_grad_(False)
 controlnet.requires_grad_(False)
 
-unet, vae = load_dreambooth_lora(unet, vae, dreambooth_lora_path)
+unet, vae, text_encoder = load_dreambooth_lora(unet, vae, text_encoder, dreambooth_lora_path)
 
 text_encoder.to(device, dtype=weight_dtype)
 vae.to(device, dtype=weight_dtype)

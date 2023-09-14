@@ -9,18 +9,16 @@ _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](htt
 ## Our model can do various tasks. Hope you can enjoy it.
 
 ## Realistic Image SR
-<img src="samples/Lincoln.gif" width="390px"/> <img src="samples/building.gif" width="390px"/>
+<img src="samples/frog.gif" width="390px"/> <img src="samples/house.gif" width="390px"/>
 
 ## Old photo restoration
-<img src="samples/629e4da70703193b.gif" width="390px"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px"/>
-
-<img src="samples/2e512b688ef48a43.gif" width="390px"/> <img src="samples/f125ee5838471073.gif" width="390px"/>
+<img src="samples/629e4da70703193b.gif" width="390px" height="520"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px" height="520"/>
 
 ## Personalized Stylization
 <img src="samples/000020x2.gif" width="390px"/> <img src="samples/000067x2.gif" width="390px"/>
 
 ## Colorization
-<img src="samples/000001x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
+<img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
 (2023-09-12) Add Gradio demo.
