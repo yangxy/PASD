@@ -21,7 +21,7 @@ _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](htt
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
-(2023-09-28) Add tiled latent to allow upscaling ultra high-resolution images.
+(2023-09-28) Add tiled latent to allow upscaling ultra high-resolution images. Please carefully set ```tiled_size``` in ```pipelines/pipeline_pasd.py``` as well as ```--vae_tiled_size``` when upscaling large images.
 
 (2023-09-12) Add Gradio demo.
 
