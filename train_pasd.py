@@ -49,6 +49,7 @@ from diffusers.utils import check_min_version, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 
 from dataloader.webdataset import WebImageDataset
+from dataloader.localdataset import LocalImageDataset
 from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
 
 if is_wandb_available():
@@ -748,9 +749,10 @@ def main(args):
     )
 
     train_dataset = WebImageDataset(image_size=args.resolution, tokenizer=tokenizer, accelerator=accelerator, control_type=args.control_type, null_text_ratio=0.5, resize_bak=True)
+    #train_dataset = LocalImageDataset(image_size=args.resolution, tokenizer=tokenizer, accelerator=accelerator, control_type=args.control_type, null_text_ratio=0.5, resize_bak=True)
 
-    train_dataloader = wds.WebLoader(
-    #train_dataloader = torch.utils.data.DataLoader(
+    #train_dataloader = wds.WebLoader(
+    train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
         num_workers=args.dataloader_num_workers,
         batch_size=args.train_batch_size,

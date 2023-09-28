@@ -991,7 +991,9 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                     controlnet_latent_model_input = latent_model_input
                     controlnet_prompt_embeds = prompt_embeds
 
-                if True: # tiled latent input
+                _, _, h, w = latent_model_input.size()
+                tile_size, tile_overlap = 128, 32
+                if h<tile_size and w<tile_size: # tiled latent input
                     down_block_res_samples, mid_block_res_sample = [None]*10, None
                     rgbs, down_block_res_samples, mid_block_res_sample = self.controlnet(
                         controlnet_latent_model_input,
@@ -1026,8 +1028,9 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                     )[0]
                 else:
                     #print(latent_model_input.shape, controlnet_latent_model_input.shape, image.shape)
-                    _, _, h, w = latent_model_input.size()
-                    tile_size, tile_overlap = 96, 32
+                    #_, _, h, w = latent_model_input.size()
+                    #tile_size, tile_overlap = 96, 32
+                    tile_size = min(128, min(h, w))
                     tile_weights = self._gaussian_weights(tile_size, tile_size, 1)
 
                     grid_rows = 0

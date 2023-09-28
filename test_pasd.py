@@ -8,6 +8,7 @@ from PIL import Image
 import safetensors.torch
 
 import torch
+from torchvision import transforms
 import torch.utils.checkpoint
 
 from accelerate import Accelerator
@@ -138,6 +139,7 @@ def get_validation_prompt(args, image, model, preprocess, category, device='cuda
     elif args.high_level_info == "caption":
         image = preprocess["eval"](image).unsqueeze(0).to(device)
         caption = model.generate({"image": image}, num_captions=1)[0]
+        caption = caption.replace("blurry", "clear").replace("noisy", "clean") #
         validation_prompt = f"{caption}, {args.prompt}"
     else:
         validation_prompt = "" if args.prompt=="" else f"{args.prompt}, "
@@ -164,6 +166,10 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 
     pipeline = load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_attention)
     model, preprocess, category = load_high_level_net(args, accelerator.device)
+
+    resize_preproc = transforms.Compose([
+        transforms.Resize(args.process_size, interpolation=transforms.InterpolationMode.BILINEAR),
+    ])
                 
     if accelerator.is_main_process:
         generator = torch.Generator(device=accelerator.device)
@@ -194,21 +200,19 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
             ori_width, ori_height = validation_image.size
             resize_flag = False
             rscale = args.upscale
-            if ori_width < args.process_size//rscale or ori_height < args.process_size//rscale:
-                scale = (args.process_size//rscale)/min(ori_width, ori_height)
-                tmp_image = validation_image.resize((int(scale*ori_width), int(scale*ori_height)))
-
-                validation_image = tmp_image
-                resize_flag = True
 
             validation_image = validation_image.resize((validation_image.size[0]*rscale, validation_image.size[1]*rscale))
+
+            if min(validation_image.size) < args.process_size:
+                validation_image = resize_preproc(validation_image)
+
             validation_image = validation_image.resize((validation_image.size[0]//8*8, validation_image.size[1]//8*8))
-            width, height = validation_image.size
+            #width, height = validation_image.size
             resize_flag = True #
 
             try:
                 image = pipeline(
-                        validation_prompt, validation_image, num_inference_steps=args.num_inference_steps, generator=generator, height=height, width=width,
+                        validation_prompt, validation_image, num_inference_steps=args.num_inference_steps, generator=generator, #height=height, width=width,
                         guidance_scale=args.guidance_scale, negative_prompt=negative_prompt, conditioning_scale=args.conditioning_scale,
                     ).images[0]
             except Exception as e:
@@ -244,7 +248,7 @@ if __name__ == "__main__":
     parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='')
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k")
-    parser.add_argument("--negative_prompt", type=str, default="dotted, noise, blur, lowres, smooth")
+    parser.add_argument("--negative_prompt", type=str, default="dotted, noise, blur, lowres, over-smooth")
     parser.add_argument("--image_path", type=str, default="examples/dog.png")
     parser.add_argument("--output_dir", type=str, default="output")
     parser.add_argument("--mixed_precision", type=str, default="fp16") # no/fp16/bf16

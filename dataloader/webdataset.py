@@ -47,7 +47,7 @@ class WebImageDataset(wds.DataPipeline, wds.compat.FluidInterface):
             accelerator=None,
             control_type=None,
             null_text_ratio=0.0,
-            center_crop=True,
+            center_crop=False,
             random_flip=True,
             resize_bak=True,
             convert_image_to="RGB",

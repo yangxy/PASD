@@ -6,6 +6,7 @@ import torch
 import random
 from PIL import Image
 from pathlib import Path
+from torchvision import transforms
 import torch.nn.functional as F
 from torchvision.models import resnet50, ResNet50_Weights
 
@@ -68,7 +69,11 @@ resnet = resnet50(weights=weights)
 resnet.eval()
 
 def inference(input_image, prompt, a_prompt, n_prompt, denoise_steps, upscale, alpha, cfg, seed):
-    image_size = 768
+    process_size = 768
+    resize_preproc = transforms.Compose([
+        transforms.Resize(process_size, interpolation=transforms.InterpolationMode.BILINEAR),
+    ])
+
     with torch.no_grad():
         seed_everything(seed)
         generator = torch.Generator(device=device)
@@ -86,16 +91,13 @@ def inference(input_image, prompt, a_prompt, n_prompt, denoise_steps, upscale, a
 
         ori_width, ori_height = input_image.size
         resize_flag = False
-        #rscale = 1 if ori_width*ori_height >= 1024*1024 else upscale
+
         rscale = upscale
-        if ori_width < image_size//rscale or ori_height < image_size//rscale:
-            scale = (image_size//rscale)/min(ori_width, ori_height)
-            tmp_image = input_image.resize((int(scale*ori_width), int(scale*ori_height)))
-
-            input_image = tmp_image
-            resize_flag = True
-
         input_image = input_image.resize((input_image.size[0]*rscale, input_image.size[1]*rscale))
+        
+        if min(validation_image.size) < process_size:
+            validation_image = resize_preproc(validation_image)
+
         input_image = input_image.resize((input_image.size[0]//8*8, input_image.size[1]//8*8))
         width, height = input_image.size
         resize_flag = True #
