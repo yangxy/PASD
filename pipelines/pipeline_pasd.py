@@ -33,11 +33,10 @@ from diffusers.utils import (
     PIL_INTERPOLATION,
     is_accelerate_available,
     is_accelerate_version,
-    is_compiled_module,
     logging,
-    randn_tensor,
     replace_example_docstring,
 )
+from diffusers.utils.torch_utils import is_compiled_module, randn_tensor
 
 from diffusers.pipeline_utils import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
