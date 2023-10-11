@@ -303,11 +303,18 @@ def build_sampling(task_queue, net, is_decoder):
             module = net.up_blocks
             func_name = 'upsamplers'
     else:
-        resolution_iter = range(net.num_resolutions)
-        block_ids = net.num_res_blocks
-        condition = net.num_resolutions - 1
-        module = net.down
-        func_name = 'downsample'
+        if sd_flag:
+            resolution_iter = range(net.num_resolutions)
+            block_ids = net.num_res_blocks
+            condition = net.num_resolutions - 1
+            module = net.down
+            func_name = 'downsample'
+        else:
+            resolution_iter = range(len(net.down_blocks))
+            block_ids = 2
+            condition = len(net.down_blocks) - 1
+            module = net.down_blocks
+            func_name = 'downsamplers'
 
     for i_level in resolution_iter:
         for i_block in range(block_ids):
@@ -319,7 +326,10 @@ def build_sampling(task_queue, net, is_decoder):
             if sd_flag:
                 task_queue.append((func_name, getattr(module[i_level], func_name)))
             else:
-                task_queue.append((func_name, module[i_level].upsamplers[0]))
+                if is_decoder:
+                    task_queue.append((func_name, module[i_level].upsamplers[0]))
+                else:
+                    task_queue.append((func_name, module[i_level].downsamplers[0]))
 
     if not is_decoder:
         if sd_flag:
@@ -688,6 +698,7 @@ class VAEHook:
         @return: image
         """
         device = next(self.net.parameters()).device
+        dtype = z.dtype
         net = self.net
         tile_size = self.tile_size
         is_decoder = self.is_decoder
@@ -830,4 +841,4 @@ class VAEHook:
 
         # Done!
         pbar.close()
-        return result if result is not None else result_approx.to(device)
+        return result.to(dtype) if result is not None else result_approx.to(device)

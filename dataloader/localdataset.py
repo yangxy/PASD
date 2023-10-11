@@ -49,9 +49,10 @@ class LocalImageDataset(data.Dataset):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ])
 
+        self.img_paths = []
         folders = os.listdir(pngtxt_dir)
         for folder in folders:
-            self.img_paths = sorted(glob.glob(f'{pngtxt_dir}/{folder}/*.png'))[:]
+            self.img_paths.extend(sorted(glob.glob(f'{pngtxt_dir}/{folder}/*.png'))[:])
 
     def tokenize_caption(self, caption):
         if random.random() < self.null_text_ratio:
