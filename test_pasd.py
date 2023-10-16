@@ -212,7 +212,7 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 
             try:
                 image = pipeline(
-                        validation_prompt, validation_image, num_inference_steps=args.num_inference_steps, generator=generator, #height=height, width=width,
+                        args, validation_prompt, validation_image, num_inference_steps=args.num_inference_steps, generator=generator, #height=height, width=width,
                         guidance_scale=args.guidance_scale, negative_prompt=negative_prompt, conditioning_scale=args.conditioning_scale,
                     ).images[0]
             except Exception as e:
@@ -259,6 +259,8 @@ if __name__ == "__main__":
     parser.add_argument("--num_inference_steps", type=int, default=20)
     parser.add_argument("--process_size", type=int, default=768)
     parser.add_argument("--vae_tiled_size", type=int, default=224) # for 24G
+    parser.add_argument("--latent_tiled_size", type=int, default=320) # for 24G
+    parser.add_argument("--latent_tiled_overlap", type=int, default=8) # for 24G
     parser.add_argument("--upscale", type=int, default=4)
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")

@@ -104,7 +104,7 @@ def inference(input_image, prompt, a_prompt, n_prompt, denoise_steps, upscale, a
 
         try:
             image = validation_pipeline(
-                    prompt, input_image, num_inference_steps=denoise_steps, generator=generator, height=height, width=width, guidance_scale=cfg, 
+                    None, prompt, input_image, num_inference_steps=denoise_steps, generator=generator, height=height, width=width, guidance_scale=cfg, 
                     negative_prompt=n_prompt, conditioning_scale=alpha, eta=0.0,
                 ).images[0]
             

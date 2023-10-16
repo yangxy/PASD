@@ -778,6 +778,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
         self,
+        args = None,
         prompt: Union[str, List[str]] = None,
         image: Union[torch.FloatTensor, PIL.Image.Image, List[torch.FloatTensor], List[PIL.Image.Image]] = None,
         height: Optional[int] = None,
@@ -991,8 +992,8 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                     controlnet_prompt_embeds = prompt_embeds
 
                 _, _, h, w = latent_model_input.size()
-                tile_size, tile_overlap = 128, 32
-                if h<tile_size and w<tile_size: # tiled latent input
+                tile_size, tile_overlap = args.latent_tiled_size, args.latent_tiled_overlap if args is not None else 256, 8
+                if h*w<=tile_size*tile_size: #h<tile_size and w<tile_size: # tiled latent input
                     down_block_res_samples, mid_block_res_sample = [None]*10, None
                     rgbs, down_block_res_samples, mid_block_res_sample = self.controlnet(
                         controlnet_latent_model_input,
@@ -1026,10 +1027,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                         return_dict=False,
                     )[0]
                 else:
-                    #print(latent_model_input.shape, controlnet_latent_model_input.shape, image.shape)
-                    #_, _, h, w = latent_model_input.size()
-                    #tile_size, tile_overlap = 96, 32
-                    tile_size = min(128, min(h, w))
+                    tile_size = min(tile_size, min(h, w))
                     tile_weights = self._gaussian_weights(tile_size, tile_size, 1)
 
                     grid_rows = 0
@@ -1150,7 +1148,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                     noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
 
                 # compute the previous noisy sample x_t -> x_t-1
-                latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
+                latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0].to(prompt_embeds.dtype)
 
                 # call the callback, if provided
                 if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):

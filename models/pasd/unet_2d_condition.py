@@ -1031,16 +1031,23 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         with open(config_file, "r") as f:
             config = json.load(f)
 
-        from diffusers.utils import WEIGHTS_NAME
+        import safetensors
+        from diffusers.utils import WEIGHTS_NAME, SAFETENSORS_WEIGHTS_NAME
         model = cls.from_config(config)
-        model_file = os.path.join(pretrained_model_path, WEIGHTS_NAME)
+        if kwargs.get("use_safetensors", False):
+            model_file = os.path.join(pretrained_model_path, SAFETENSORS_WEIGHTS_NAME)
+        else:
+            model_file = os.path.join(pretrained_model_path, WEIGHTS_NAME)
         if not os.path.isfile(model_file):
             raise RuntimeError(f"{model_file} does not exist")
-        state_dict = torch.load(model_file, map_location="cpu")
-        for k, v in model.state_dict().items():
-            if 'attn2_plus' in k:
-                #print(k)
-                state_dict.update({k: v})
+        if kwargs.get("use_safetensors", False):
+            state_dict = safetensors.torch.load_file(model_file, device="cpu")
+        else:
+            state_dict = torch.load(model_file, map_location="cpu")
+        #for k, v in model.state_dict().items():
+        #    if 'attn' in k:
+        #        print(k)
+        #        state_dict.update({k: v})
         model.load_state_dict(state_dict, strict=False)
 
         return model
