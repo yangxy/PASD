@@ -169,6 +169,127 @@ def attn_forward_new(self, h_):
 
     return hidden_states
 
+def attn_forward_new_pt2_0(self, hidden_states,):
+    scale = 1
+    attention_mask = None
+    encoder_hidden_states = None
+
+    input_ndim = hidden_states.ndim
+
+    if input_ndim == 4:
+        batch_size, channel, height, width = hidden_states.shape
+        hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+
+    batch_size, sequence_length, _ = (
+        hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+    )
+
+    if attention_mask is not None:
+        attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)
+        # scaled_dot_product_attention expects attention_mask shape to be
+        # (batch, heads, source_length, target_length)
+        attention_mask = attention_mask.view(batch_size, self.heads, -1, attention_mask.shape[-1])
+
+    if self.group_norm is not None:
+        hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+
+    query = self.to_q(hidden_states, scale=scale)
+
+    if encoder_hidden_states is None:
+        encoder_hidden_states = hidden_states
+    elif self.norm_cross:
+        encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+
+    key = self.to_k(encoder_hidden_states, scale=scale)
+    value = self.to_v(encoder_hidden_states, scale=scale)
+
+    inner_dim = key.shape[-1]
+    head_dim = inner_dim // self.heads
+
+    query = query.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+
+    key = key.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+    value = value.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+
+    # the output of sdp = (batch, num_heads, seq_len, head_dim)
+    # TODO: add support for attn.scale when we move to Torch 2.1
+    hidden_states = F.scaled_dot_product_attention(
+        query, key, value, attn_mask=attention_mask, dropout_p=0.0, is_causal=False
+    )
+
+    hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
+    hidden_states = hidden_states.to(query.dtype)
+
+    # linear proj
+    hidden_states = self.to_out[0](hidden_states, scale=scale)
+    # dropout
+    hidden_states = self.to_out[1](hidden_states)
+
+    if input_ndim == 4:
+        hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+    return hidden_states
+
+def attn_forward_new_xformers(self, hidden_states):
+    scale = 1
+    attention_op = None
+    attention_mask = None
+    encoder_hidden_states = None
+
+    input_ndim = hidden_states.ndim
+
+    if input_ndim == 4:
+        batch_size, channel, height, width = hidden_states.shape
+        hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+
+    batch_size, key_tokens, _ = (
+        hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+    )
+
+    attention_mask = self.prepare_attention_mask(attention_mask, key_tokens, batch_size)
+    if attention_mask is not None:
+        # expand our mask's singleton query_tokens dimension:
+        #   [batch*heads,            1, key_tokens] ->
+        #   [batch*heads, query_tokens, key_tokens]
+        # so that it can be added as a bias onto the attention scores that xformers computes:
+        #   [batch*heads, query_tokens, key_tokens]
+        # we do this explicitly because xformers doesn't broadcast the singleton dimension for us.
+        _, query_tokens, _ = hidden_states.shape
+        attention_mask = attention_mask.expand(-1, query_tokens, -1)
+
+    if self.group_norm is not None:
+        hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+
+    query = self.to_q(hidden_states, scale=scale)
+
+    if encoder_hidden_states is None:
+        encoder_hidden_states = hidden_states
+    elif self.norm_cross:
+        encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+
+    key = self.to_k(encoder_hidden_states, scale=scale)
+    value = self.to_v(encoder_hidden_states, scale=scale)
+
+    query = self.head_to_batch_dim(query).contiguous()
+    key = self.head_to_batch_dim(key).contiguous()
+    value = self.head_to_batch_dim(value).contiguous()
+
+    hidden_states = xformers.ops.memory_efficient_attention(
+        query, key, value, attn_bias=attention_mask, op=attention_op#, scale=scale
+    )
+    hidden_states = hidden_states.to(query.dtype)
+    hidden_states = self.batch_to_head_dim(hidden_states)
+
+    # linear proj
+    hidden_states = self.to_out[0](hidden_states, scale=scale)
+    # dropout
+    hidden_states = self.to_out[1](hidden_states)
+
+    if input_ndim == 4:
+        hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+    return hidden_states
+
 def attn_forward(self, h_):
     q = self.q(h_)
     k = self.k(h_)
@@ -241,7 +362,7 @@ def attn2task(task_queue, net):
     else:
         task_queue.append(('store_res', lambda x: x))
         task_queue.append(('pre_norm', net.group_norm))
-        task_queue.append(('attn', lambda x, net=net: attn_forward_new(net, x)))
+        task_queue.append(('attn', lambda x, net=net: attn_forward_new_xformers(net, x)))
         task_queue.append(['add_res', None])
 
 def resblock2task(queue, block):
