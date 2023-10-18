@@ -699,7 +699,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         return image
 
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionPipeline.prepare_latents
-    def prepare_latents(self, batch_size, num_channels_latents, height, width, dtype, device, generator, latents=None):
+    def prepare_latents(self, args, batch_size, num_channels_latents, height, width, dtype, device, generator, latents=None):
         shape = (batch_size, num_channels_latents, height // self.vae_scale_factor, width // self.vae_scale_factor)
         if isinstance(generator, list) and len(generator) != batch_size:
             raise ValueError(
@@ -709,9 +709,9 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
 
         if latents is None:
             latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
-            #latents = randn_tensor(shape, generator=None, device=device, dtype=dtype)
-            #offset_noise = torch.randn(batch_size, num_channels_latents, 1, 1, device=device)
-            #latents = latents + 0.1 * offset_noise
+            offset_noise = torch.randn(batch_size, num_channels_latents, 1, 1, device=device).to(dtype)
+            offset_noise_scale = args.offset_noise_scale if args is not None else 0.1
+            latents = latents + offset_noise_scale * offset_noise
         else:
             latents = latents.to(device)
 
@@ -961,6 +961,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         # 6. Prepare latent variables
         num_channels_latents = self.unet.config.in_channels
         latents = self.prepare_latents(
+            args,
             batch_size * num_images_per_prompt,
             num_channels_latents,
             height,
@@ -992,7 +993,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                     controlnet_prompt_embeds = prompt_embeds
 
                 _, _, h, w = latent_model_input.size()
-                tile_size, tile_overlap = args.latent_tiled_size, args.latent_tiled_overlap if args is not None else 256, 8
+                tile_size, tile_overlap = (args.latent_tiled_size, args.latent_tiled_overlap) if args is not None else (256, 8)
                 if h*w<=tile_size*tile_size: #h<tile_size and w<tile_size: # tiled latent input
                     down_block_res_samples, mid_block_res_sample = [None]*10, None
                     rgbs, down_block_res_samples, mid_block_res_sample = self.controlnet(

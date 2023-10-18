@@ -66,6 +66,7 @@ import torch
 import torch.version
 import torch.nn.functional as F
 from einops import rearrange
+from diffusers.utils.import_utils import is_xformers_available
 
 import myutils.devices as devices
 #from modules.shared import state
@@ -362,7 +363,12 @@ def attn2task(task_queue, net):
     else:
         task_queue.append(('store_res', lambda x: x))
         task_queue.append(('pre_norm', net.group_norm))
-        task_queue.append(('attn', lambda x, net=net: attn_forward_new_xformers(net, x)))
+        if is_xformers_available:
+            task_queue.append(('attn', lambda x, net=net: attn_forward_new_xformers(net, x)))
+        elif hasattr(F, "scaled_dot_product_attention"):
+            task_queue.append(('attn', lambda x, net=net: attn_forward_new_pt2_0(net, x)))
+        else:
+            task_queue.append(('attn', lambda x, net=net: attn_forward_new(net, x)))
         task_queue.append(['add_res', None])
 
 def resblock2task(queue, block):

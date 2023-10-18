@@ -183,6 +183,7 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 
         for image_name in image_names[:]:
             validation_image = Image.open(image_name).convert("RGB")
+            #validation_image = Image.new(mode='RGB', size=validation_image.size, color=(0,0,0))
             if args.control_type == "realisr":
                 validation_prompt = get_validation_prompt(args, validation_image, model, preprocess, category)
                 validation_prompt += args.added_prompt # clean, extremely detailed, best quality, sharp, clean
@@ -210,14 +211,15 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
             #width, height = validation_image.size
             resize_flag = True #
 
-            try:
+            #try:
+            if True:
                 image = pipeline(
                         args, validation_prompt, validation_image, num_inference_steps=args.num_inference_steps, generator=generator, #height=height, width=width,
                         guidance_scale=args.guidance_scale, negative_prompt=negative_prompt, conditioning_scale=args.conditioning_scale,
                     ).images[0]
-            except Exception as e:
-                print(e)
-                continue
+            #except Exception as e:
+            #    print(e)
+            #    continue
 
             if True: #args.conditioning_scale < 1.0:
                 image = wavelet_color_fix(image, validation_image)
@@ -261,6 +263,7 @@ if __name__ == "__main__":
     parser.add_argument("--vae_tiled_size", type=int, default=224) # for 24G
     parser.add_argument("--latent_tiled_size", type=int, default=320) # for 24G
     parser.add_argument("--latent_tiled_overlap", type=int, default=8) # for 24G
+    parser.add_argument("--offset_noise_scale", type=float, default=0.1)
     parser.add_argument("--upscale", type=int, default=4)
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")
