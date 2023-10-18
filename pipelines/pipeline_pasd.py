@@ -94,7 +94,6 @@ EXAMPLE_DOC_STRING = """
         ```
 """
 
-
 class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
     r"""
     Pipeline for text-to-image generation using Stable Diffusion with ControlNet guidance.
@@ -710,7 +709,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         if latents is None:
             latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
             offset_noise = torch.randn(batch_size, num_channels_latents, 1, 1, device=device).to(dtype)
-            offset_noise_scale = args.offset_noise_scale if args is not None else 0.1
+            offset_noise_scale = args.offset_noise_scale if args is not None else 0.05
             latents = latents + offset_noise_scale * offset_noise
         else:
             latents = latents.to(device)
@@ -798,6 +797,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         callback_steps: int = 1,
         cross_attention_kwargs: Optional[Dict[str, Any]] = None,
         conditioning_scale: Union[float, List[float]] = 1.0,
+        guidance_rescale: float = 0.0,
         guess_mode: bool = False,
     ):
         r"""

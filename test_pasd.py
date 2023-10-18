@@ -245,25 +245,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-v1-5")
     parser.add_argument("--pasd_model_path", type=str, default="runs/pasd/checkpoint-100000")
-    parser.add_argument("--personalized_model_path", type=str, default="disney.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
+    parser.add_argument("--personalized_model_path", type=str, default="majicmixRealistic_v6.safetensors") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr")
     parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='')
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k")
-    parser.add_argument("--negative_prompt", type=str, default="dotted, noise, blur, lowres, over-smooth")
-    parser.add_argument("--image_path", type=str, default="examples/dog.png")
+    parser.add_argument("--negative_prompt", type=str, default="raster lines, dotted, noise, blurry, unclear, lowres, over-smoothed")
+    parser.add_argument("--image_path", type=str, default="examples/RealSRSet")
     parser.add_argument("--output_dir", type=str, default="output")
     parser.add_argument("--mixed_precision", type=str, default="fp16") # no/fp16/bf16
     parser.add_argument("--guidance_scale", type=float, default=7.5)
     parser.add_argument("--conditioning_scale", type=float, default=1.0)
     parser.add_argument("--blending_alpha", type=float, default=1.0)
     parser.add_argument("--multiplier", type=float, default=0.6)
-    parser.add_argument("--num_inference_steps", type=int, default=20)
+    parser.add_argument("--num_inference_steps", type=int, default=16)
     parser.add_argument("--process_size", type=int, default=768)
     parser.add_argument("--vae_tiled_size", type=int, default=224) # for 24G
     parser.add_argument("--latent_tiled_size", type=int, default=320) # for 24G
     parser.add_argument("--latent_tiled_overlap", type=int, default=8) # for 24G
-    parser.add_argument("--offset_noise_scale", type=float, default=0.1)
+    parser.add_argument("--offset_noise_scale", type=float, default=0.05)
     parser.add_argument("--upscale", type=int, default=4)
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")
