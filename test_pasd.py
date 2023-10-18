@@ -14,7 +14,7 @@ import torch.utils.checkpoint
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
-from diffusers import AutoencoderKL, PNDMScheduler, UniPCMultistepScheduler#, StableDiffusionControlNetPipeline
+from diffusers import AutoencoderKL, PNDMScheduler, UniPCMultistepScheduler, DPMSolverMultistepScheduler#, StableDiffusionControlNetPipeline
 from diffusers.utils import check_min_version
 from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor
@@ -88,7 +88,7 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
         unet=unet, controlnet=controlnet, scheduler=scheduler, safety_checker=None, requires_safety_checker=False,
     )
     #validation_pipeline.enable_vae_tiling()
-    validation_pipeline._init_tiled_vae(decoder_tile_size=args.vae_tiled_size)
+    validation_pipeline._init_tiled_vae(encoder_tile_size=args.encoder_tiled_size, decoder_tile_size=args.decoder_tiled_size)
 
     return validation_pipeline
 
@@ -211,15 +211,14 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
             #width, height = validation_image.size
             resize_flag = True #
 
-            #try:
-            if True:
+            try:
                 image = pipeline(
                         args, validation_prompt, validation_image, num_inference_steps=args.num_inference_steps, generator=generator, #height=height, width=width,
                         guidance_scale=args.guidance_scale, negative_prompt=negative_prompt, conditioning_scale=args.conditioning_scale,
                     ).images[0]
-            #except Exception as e:
-            #    print(e)
-            #    continue
+            except Exception as e:
+                print(e)
+                continue
 
             if True: #args.conditioning_scale < 1.0:
                 image = wavelet_color_fix(image, validation_image)
@@ -250,7 +249,7 @@ if __name__ == "__main__":
     parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='')
     parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k")
-    parser.add_argument("--negative_prompt", type=str, default="raster lines, dotted, noise, blurry, unclear, lowres, over-smoothed")
+    parser.add_argument("--negative_prompt", type=str, default="blurry, dotted, noise, raster lines, unclear, lowres, over-smoothed")
     parser.add_argument("--image_path", type=str, default="examples/RealSRSet")
     parser.add_argument("--output_dir", type=str, default="output")
     parser.add_argument("--mixed_precision", type=str, default="fp16") # no/fp16/bf16
@@ -258,15 +257,17 @@ if __name__ == "__main__":
     parser.add_argument("--conditioning_scale", type=float, default=1.0)
     parser.add_argument("--blending_alpha", type=float, default=1.0)
     parser.add_argument("--multiplier", type=float, default=0.6)
-    parser.add_argument("--num_inference_steps", type=int, default=16)
-    parser.add_argument("--process_size", type=int, default=768)
-    parser.add_argument("--vae_tiled_size", type=int, default=224) # for 24G
+    parser.add_argument("--num_inference_steps", type=int, default=20)
+    parser.add_argument("--process_size", type=int, default=768) # 512?
+    parser.add_argument("--decoder_tiled_size", type=int, default=224) # for 24G
+    parser.add_argument("--encoder_tiled_size", type=int, default=1024) # for 24G
     parser.add_argument("--latent_tiled_size", type=int, default=320) # for 24G
     parser.add_argument("--latent_tiled_overlap", type=int, default=8) # for 24G
-    parser.add_argument("--offset_noise_scale", type=float, default=0.05)
     parser.add_argument("--upscale", type=int, default=4)
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")
+    parser.add_argument("--init_latent_with_noise", action="store_true")
+    parser.add_argument("--offset_noise_scale", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
     main(args)

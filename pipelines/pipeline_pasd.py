@@ -178,7 +178,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         self.register_to_config(requires_safety_checker=requires_safety_checker)
 
     def _init_tiled_vae(self,
-            encoder_tile_size = 256,
+            encoder_tile_size = 1024,
             decoder_tile_size = 256,
             fast_decoder = False,
             fast_encoder = False,
@@ -698,7 +698,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         return image
 
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionPipeline.prepare_latents
-    def prepare_latents(self, args, batch_size, num_channels_latents, height, width, dtype, device, generator, latents=None):
+    def prepare_latents(self, args, image, batch_size, num_channels_latents, height, width, dtype, device, generator, latents=None):
         shape = (batch_size, num_channels_latents, height // self.vae_scale_factor, width // self.vae_scale_factor)
         if isinstance(generator, list) and len(generator) != batch_size:
             raise ValueError(
@@ -706,13 +706,26 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
                 f" size of {batch_size}. Make sure the batch size matches the length of the generators."
             )
 
-        if latents is None:
-            latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
-            offset_noise = torch.randn(batch_size, num_channels_latents, 1, 1, device=device).to(dtype)
-            offset_noise_scale = args.offset_noise_scale if args is not None else 0.05
-            latents = latents + offset_noise_scale * offset_noise
+        if args is None or args.init_latent_with_noise:
+            if latents is None:
+                latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+                offset_noise = torch.randn(batch_size, num_channels_latents, 1, 1, device=device).to(dtype)
+                offset_noise_scale = args.offset_noise_scale if args is not None else 0.0
+                latents = latents + offset_noise_scale * offset_noise
+            else:
+                latents = latents.to(device)
         else:
-            latents = latents.to(device)
+            #print(image.shape, image.min(), image.max())
+            if dtype==torch.float16: self.vae.quant_conv.half()
+            init_latents = self.vae.encode(image*2.0-1.0).latent_dist.sample(generator)
+            init_latents = self.vae.config.scaling_factor * init_latents
+            self.scheduler.set_timesteps(args.num_inference_steps, device=device)
+            timesteps = self.scheduler.timesteps[0:]
+            latent_timestep = timesteps[:1].repeat(batch_size * 1)
+            shape = init_latents.shape
+            noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+            init_latents = self.scheduler.add_noise(init_latents, noise, latent_timestep)
+            latents = init_latents
 
         # scale the initial noise by the standard deviation required by the scheduler
         latents = latents * self.scheduler.init_noise_sigma
@@ -962,6 +975,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         num_channels_latents = self.unet.config.in_channels
         latents = self.prepare_latents(
             args,
+            image[:1],
             batch_size * num_images_per_prompt,
             num_channels_latents,
             height,

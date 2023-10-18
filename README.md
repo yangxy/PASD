@@ -21,11 +21,13 @@ _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](htt
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
+(2023-10-18) Completely solved the [issues](https://github.com/yangxy/PASD/issues/16) by initializing latents with input LR images. Interestingly, the SR results also become much more stable.
+
 (2023-10-11) [Colab demo](https://colab.research.google.com/drive/1lZ_-rSGcmreLCiRniVT973x6JLjFiC-b?usp=sharing) is now available. Credits to [Masahide Okada](https://github.com/MasahideOkada).
 
 (2023-10-09) Add training dataset.
 
-(2023-09-28) Add tiled latent to allow upscaling ultra high-resolution images. Please carefully set ```tiled_size``` in ```pipelines/pipeline_pasd.py``` as well as ```--vae_tiled_size``` when upscaling large images.
+(2023-09-28) Add tiled latent to allow upscaling ultra high-resolution images. Please carefully set ```latent_tiled_size``` as well as ```--decoder_tiled_size``` when upscaling large images.
 
 (2023-09-12) Add Gradio demo.
 
