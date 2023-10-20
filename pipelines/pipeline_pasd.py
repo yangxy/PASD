@@ -721,14 +721,14 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
             init_latents = self.vae.config.scaling_factor * init_latents
             self.scheduler.set_timesteps(args.num_inference_steps, device=device)
             timesteps = self.scheduler.timesteps[0:]
-            latent_timestep = timesteps[:1].repeat(batch_size * 1)
+            latent_timestep = timesteps[:1].repeat(batch_size * 1) # 999 what if <999"?
             shape = init_latents.shape
             noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
             init_latents = self.scheduler.add_noise(init_latents, noise, latent_timestep)
 
-            latent_timestep = torch.LongTensor([args.added_noise_level]).repeat(batch_size * 1).to(self.device)
-            noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
-            init_latents = self.scheduler.add_noise(init_latents, noise, latent_timestep)
+            added_latent_timestep = torch.LongTensor([args.added_noise_level]).repeat(batch_size * 1).to(self.device)
+            added_noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+            init_latents = self.scheduler.add_noise(init_latents, added_noise, added_latent_timestep)
 
             latents = init_latents
 
