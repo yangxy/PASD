@@ -238,7 +238,7 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
                 np_image = cv2.cvtColor(hires, cv2.COLOR_YUV2BGR)
                 cv2.imwrite(f'{args.output_dir}/{name}.png', np_image)
             else:
-                image.save(f'{args.output_dir}/{name}.png')
+                image.save(f'{args.output_dir}/{name}_.png')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -267,6 +267,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_personalized_model", action="store_true")
     parser.add_argument("--use_pasd_light", action="store_true")
     parser.add_argument("--init_latent_with_noise", action="store_true")
+    parser.add_argument("--added_noise_level", type=int, default=400)
     parser.add_argument("--offset_noise_scale", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()

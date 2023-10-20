@@ -725,6 +725,11 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
             shape = init_latents.shape
             noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
             init_latents = self.scheduler.add_noise(init_latents, noise, latent_timestep)
+
+            latent_timestep = torch.LongTensor([args.added_noise_level]).repeat(batch_size * 1).to(self.device)
+            noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+            init_latents = self.scheduler.add_noise(init_latents, noise, latent_timestep)
+
             latents = init_latents
 
         # scale the initial noise by the standard deviation required by the scheduler
