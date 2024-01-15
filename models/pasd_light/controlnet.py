@@ -26,7 +26,7 @@ from diffusers.models.embeddings import TextImageProjection, TextImageTimeEmbedd
 from diffusers.models.modeling_utils import ModelMixin
 from basicsr.archs.rrdbnet_arch import RRDB
 
-from .unet_2d_blocks import (
+from diffusers.models.unet_2d_blocks import (
     CrossAttnDownBlock2D,
     DownBlock2D,
     UNetMidBlock2DCrossAttn,

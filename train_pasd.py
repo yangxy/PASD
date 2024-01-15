@@ -48,9 +48,10 @@ from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 
-from dataloader.webdataset import WebImageDataset
-from dataloader.localdataset import LocalImageDataset
+from dataloader.webdatasets import WebImageDataset, Text2ImageDataset
+from dataloader.localdatasets import LocalImageDataset
 from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
+from myutils.img_util import colorful_loss
 
 if is_wandb_available():
     import wandb
@@ -520,6 +521,7 @@ def parse_args(input_args=None):
         ),
     )
 
+    parser.add_argument("--train_shards_path_or_url", type=str, default="pipe:hdfs dfs -cat hdfs://harunava/user/yangtao.179/laion-high-resolution/{0000:02000}.tar")
     parser.add_argument('--trainable_modules', nargs='*', type=str, default=["pixel_attentions", "norm2_plus", "attn2_plus", "proj_in_plus"])
     parser.add_argument("--use_pasd_light", action="store_true")
 
@@ -573,7 +575,7 @@ def main(args):
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
         log_with=args.report_to,
-        logging_dir=logging_dir,
+        #project_dir=logging_dir,
         project_config=accelerator_project_config,
     )
 
@@ -675,12 +677,19 @@ def main(args):
     unet.requires_grad_(False)
     text_encoder.requires_grad_(False)
     controlnet.train()
-
+    """
     for name, module in unet.named_modules():
         if name.endswith(tuple(args.trainable_modules)):
             print(name)
             for params in module.parameters():
                 params.requires_grad = True
+    """
+    for name, param in unet.named_parameters():
+        for trainable_module_name in args.trainable_modules:
+            if trainable_module_name in name:
+                print(name)
+                param.requires_grad = True
+                break
 
     if args.enable_xformers_memory_efficient_attention:
         if is_xformers_available():
@@ -747,24 +756,46 @@ def main(args):
         weight_decay=args.adam_weight_decay,
         eps=args.adam_epsilon,
     )
+    
+    if False:
+        train_dataset = WebImageDataset(image_size=args.resolution, tokenizer=tokenizer, accelerator=accelerator, control_type=args.control_type, null_text_ratio=0.5, resize_bak=True)
+        #train_dataset = LocalImageDataset(image_size=args.resolution, tokenizer=tokenizer, accelerator=accelerator, control_type=args.control_type, null_text_ratio=0.5, resize_bak=True)
 
-    train_dataset = WebImageDataset(image_size=args.resolution, tokenizer=tokenizer, accelerator=accelerator, control_type=args.control_type, null_text_ratio=0.5, resize_bak=True)
-    #train_dataset = LocalImageDataset(image_size=args.resolution, tokenizer=tokenizer, accelerator=accelerator, control_type=args.control_type, null_text_ratio=0.5, resize_bak=True)
-
-    #train_dataloader = wds.WebLoader(
-    train_dataloader = torch.utils.data.DataLoader(
-        train_dataset,
-        num_workers=args.dataloader_num_workers,
-        batch_size=args.train_batch_size,
-        #prefetch_factor=2,  # This might be good to have high so the next npy file is prefetched
-        #pin_memory=True,
-        shuffle=False
-    )
-
+        #train_dataloader = wds.WebLoader(
+        train_dataloader = torch.utils.data.DataLoader(
+            train_dataset,
+            num_workers=args.dataloader_num_workers,
+            batch_size=args.train_batch_size,
+            #prefetch_factor=2,  # This might be good to have high so the next npy file is prefetched
+            #pin_memory=True,
+            shuffle=False
+        )
+        train_dataloader_length = 100000
+    else:
+        # Get the datasets: you can either provide your own training and evaluation files (see below)
+        # or specify a Dataset from the hub (the dataset will be downloaded automatically from the datasets Hub).
+        train_dataset = Text2ImageDataset(
+            train_shards_path_or_url=args.train_shards_path_or_url,
+            num_train_examples=args.max_train_samples,
+            per_gpu_batch_size=args.train_batch_size,
+            global_batch_size=args.train_batch_size * accelerator.num_processes,
+            num_workers=args.dataloader_num_workers,
+            resolution=args.resolution,
+            shuffle_buffer_size=1000,
+            pin_memory=True,
+            persistent_workers=True,
+            tokenizer=tokenizer, 
+            control_type=args.control_type, 
+            null_text_ratio=0.5, 
+            resize_bak=True,
+        )
+        train_dataloader = train_dataset.train_dataloader
+        train_dataloader_length = train_dataloader.num_batches # len(train_dataloader)
+        
     # Scheduler and math around the number of training steps.
     overrode_max_train_steps = False
     if not isinstance(train_dataset, WebImageDataset):
-        num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+        num_update_steps_per_epoch = math.ceil(train_dataloader_length / args.gradient_accumulation_steps)
         if args.max_train_steps is None:
             args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
             overrode_max_train_steps = True
@@ -799,7 +830,7 @@ def main(args):
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     if not isinstance(train_dataset, WebImageDataset):
-        num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
+        num_update_steps_per_epoch = math.ceil(train_dataloader_length / args.gradient_accumulation_steps)
         if overrode_max_train_steps:
             args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
         # Afterwards we recalculate our number of training epochs
@@ -824,8 +855,8 @@ def main(args):
 
     logger.info("***** Running training *****")
     if not isinstance(train_dataset, WebImageDataset):
-        logger.info(f"  Num examples = {len(train_dataset)}")
-        logger.info(f"  Num batches each epoch = {len(train_dataloader)}")
+        #logger.info(f"  Num examples = {len(train_dataset)}")
+        logger.info(f"  Num batches each epoch = {train_dataloader_length}")
     logger.info(f"  Num Epochs = {args.num_train_epochs}")
     logger.info(f"  Instantaneous batch size per device = {args.train_batch_size}")
     logger.info(f"  Total train batch size (w. parallel, distributed & accumulation) = {total_batch_size}")
@@ -873,8 +904,11 @@ def main(args):
         for step, batch in enumerate(train_dataloader):
             #with accelerator.accumulate(controlnet):
             with accelerator.accumulate(controlnet), accelerator.accumulate(unet):
+                pixel_values, text, input_ids, conditioning_pixel_values = batch
+                #print(pixel_values.shape, text, input_ids.shape, conditioning_pixel_values.shape)
+
                 # Convert images to latent space
-                pixel_values = batch["pixel_values"].to(accelerator.device, dtype=weight_dtype)
+                pixel_values = pixel_values.to(accelerator.device, dtype=weight_dtype)
                 latents = vae.encode(pixel_values).latent_dist.sample()
                 latents = latents * vae.config.scaling_factor
 
@@ -890,9 +924,9 @@ def main(args):
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
                 # Get the text embedding for conditioning
-                encoder_hidden_states = text_encoder(batch["input_ids"].to(accelerator.device))[0]
+                encoder_hidden_states = text_encoder(input_ids.to(accelerator.device))[0]
 
-                controlnet_image = batch["conditioning_pixel_values"].to(accelerator.device, dtype=weight_dtype)
+                controlnet_image = conditioning_pixel_values.to(accelerator.device, dtype=weight_dtype)
                 #print(pixel_values.shape, latents.shape, encoder_hidden_states.shape, controlnet_image.shape)
 
                 controlnet_cond_mid, down_block_res_samples, mid_block_res_sample = controlnet(
@@ -925,8 +959,14 @@ def main(args):
                     if isinstance(controlnet_cond_mid, list):
                         for values in controlnet_cond_mid:
                             loss += F.l1_loss(F.interpolate(pixel_values, size=values.shape[-2:], mode='bilinear').float(), values.float(), reduction="mean")
+                            if args.control_type == "grayscale":
+                                loss_colorful = sum([colorful_loss(values) for values in controlnet_cond_mid])
+                                loss += loss_colorful
                     else:
                         loss += F.l1_loss(pixel_values.float(), controlnet_cond_mid.float(), reduction="mean")
+                        if args.control_type == "grayscale":
+                            loss_colorful = colorful_loss(controlnet_cond_mid)
+                            loss += loss_colorful
                 #print(pixel_values.min(), pixel_values.max(), controlnet_cond_mid.min(), controlnet_cond_mid.max())
 
                 accelerator.backward(loss)

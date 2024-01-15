@@ -29,7 +29,7 @@ def save_videos_grid(videos, path=None, rescale=True, n_rows=4, fps=8, discardN=
 
     return outputs
 
-def convert_image_to_fn(img_type, minsize, image, eps=0.02):
+def convert_image_to_fn(img_type, image, minsize=512, eps=0.02):
     width, height = image.size
     if min(width, height) < minsize:
         scale = minsize/min(width, height) + eps
@@ -38,3 +38,17 @@ def convert_image_to_fn(img_type, minsize, image, eps=0.02):
     if image.mode != img_type:
         return image.convert(img_type)
     return image
+
+def colorful_loss(pred):
+    colorfulness_loss = 0
+    for i in range(pred.shape[0]):
+        (R, G, B) = pred[i][0], pred[i][1], pred[i][2]
+        rg = torch.abs(R - G)
+        yb = torch.abs(0.5 * (R+G) - B)
+        (rbMean, rbStd) = (torch.mean(rg), torch.std(rg))
+        (ybMean, ybStd) = (torch.mean(yb), torch.std(yb))
+        stdRoot = torch.sqrt((rbStd ** 2) + (ybStd ** 2))
+        meanRoot = torch.sqrt((rbMean ** 2) + (ybMean ** 2))
+        colorfulness = stdRoot + (0.3 * meanRoot)
+        colorfulness_loss += (1 - colorfulness)
+    return colorfulness_loss

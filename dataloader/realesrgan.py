@@ -51,7 +51,8 @@ def opt_parse(opt_path):
     return opt
 
 class RealESRGAN_degradation(object):
-    def __init__(self, opt_path=f'{cur_path}/params_realesrgan.yml', device='cpu'):
+    def __init__(self, opt_name='params_realesrgan.yml', device='cpu'):
+        opt_path = f'{cur_path}/{opt_name}'
         self.opt = opt_parse(opt_path)
         self.device = device #torch.device('cpu')
         optk = self.opt['kernel_info']       

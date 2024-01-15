@@ -11,7 +11,8 @@ from torchvision import transforms
 from torch.utils import data as data
 
 from .realesrgan import RealESRGAN_degradation
-from myutils.img_util import convert_image_to_fn, exists
+from myutils.img_util import convert_image_to_fn
+from myutils.misc import exists
 
 class LocalImageDataset(data.Dataset):
     def __init__(self, 
@@ -34,7 +35,7 @@ class LocalImageDataset(data.Dataset):
 
         self.degradation = RealESRGAN_degradation('params_realesrgan.yml', device='cpu')
 
-        maybe_convert_fn = partial(convert_image_to_fn, convert_image_to, image_size) if exists(convert_image_to) else nn.Identity()
+        maybe_convert_fn = partial(convert_image_to_fn, convert_image_to) if exists(convert_image_to) else nn.Identity()
         self.crop_preproc = transforms.Compose([
             transforms.Lambda(maybe_convert_fn),
             #transforms.Resize(image_size, interpolation=transforms.InterpolationMode.BILINEAR),
