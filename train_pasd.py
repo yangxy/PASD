@@ -521,7 +521,7 @@ def parse_args(input_args=None):
         ),
     )
 
-    parser.add_argument("--train_shards_path_or_url", type=str, default="pipe:hdfs dfs -cat hdfs://harunava/user/yangtao.179/laion-high-resolution/{0000:02000}.tar")
+    parser.add_argument("--train_shards_path_or_url", type=str, default=None)
     parser.add_argument('--trainable_modules', nargs='*', type=str, default=["pixel_attentions", "norm2_plus", "attn2_plus", "proj_in_plus"])
     parser.add_argument("--use_pasd_light", action="store_true")
 
