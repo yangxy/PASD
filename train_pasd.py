@@ -908,7 +908,7 @@ def main(args):
                 #print(pixel_values.shape, text, input_ids.shape, conditioning_pixel_values.shape)
 
                 # Convert images to latent space
-                pixel_values = pixel_values.to(accelerator.device, dtype=weight_dtype)
+                pixel_values = pixel_values.to(accelerator.device, dtype=weight_dtype, non_blocking=True)
                 latents = vae.encode(pixel_values).latent_dist.sample()
                 latents = latents * vae.config.scaling_factor
 
@@ -926,7 +926,7 @@ def main(args):
                 # Get the text embedding for conditioning
                 encoder_hidden_states = text_encoder(input_ids.to(accelerator.device))[0]
 
-                controlnet_image = conditioning_pixel_values.to(accelerator.device, dtype=weight_dtype)
+                controlnet_image = conditioning_pixel_values.to(accelerator.device, dtype=weight_dtype, non_blocking=True)
                 #print(pixel_values.shape, latents.shape, encoder_hidden_states.shape, controlnet_image.shape)
 
                 controlnet_cond_mid, down_block_res_samples, mid_block_res_sample = controlnet(

@@ -46,7 +46,7 @@ def ordered_yaml():
 def opt_parse(opt_path):
     with open(opt_path, mode='r') as f:
         Loader, _ = ordered_yaml()
-        opt = yaml.load(f, Loader=Loader) 
+        opt = yaml.load(f, Loader=Loader)  # ignore_security_alert_wait_for_fix RCE
 
     return opt
 
