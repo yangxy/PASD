@@ -21,8 +21,6 @@ _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](htt
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
-(2024-1-16) Support LCM-LORA now. PASD can upscale a image with 2-4 steps. Try `python test_pasd.py --num_inference_steps 3 --use_lcm_lora`. You should download LCM-LORA model from [lcm-lora-sdv1-5](https://huggingface.co/latent-consistency/lcm-lora-sdv1-5) and put it in the `checkpoints` folder. 
-
 (2024-1-16) You may also want to check our new updates [SeeSR](https://github.com/cswry/seesr) and [Phantom](https://github.com/dreamoving/Phantom). 
 
 (2023-10-20) Add additional noise level via ```--added_noise_level``` and the SR result achieves a great balance between "extremely-detailed" and "over-smoothed". Very interesting!. You can control the SR's detail level freely. 
