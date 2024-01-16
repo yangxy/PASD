@@ -26,7 +26,7 @@ from torchvision.utils import save_image
 from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer
 
 from diffusers.image_processor import VaeImageProcessor
-from diffusers.loaders import TextualInversionLoaderMixin
+from diffusers.loaders import TextualInversionLoaderMixin, LoraLoaderMixin
 from diffusers.models import AutoencoderKL, ControlNetModel, UNet2DConditionModel
 from diffusers.schedulers import KarrasDiffusionSchedulers
 from diffusers.utils import (
@@ -94,7 +94,7 @@ EXAMPLE_DOC_STRING = """
         ```
 """
 
-class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
+class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoaderMixin, LoraLoaderMixin):
     r"""
     Pipeline for text-to-image generation using Stable Diffusion with ControlNet guidance.
 
