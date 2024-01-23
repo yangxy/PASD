@@ -4,5 +4,5 @@ transformers
 xformers
 basicsr
 ultralytics
-salesforce-lavis
 webdataset
+open_clip_torch

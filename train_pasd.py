@@ -961,12 +961,12 @@ def main(args):
                             loss += F.l1_loss(F.interpolate(pixel_values, size=values.shape[-2:], mode='bilinear').float(), values.float(), reduction="mean")
                             if args.control_type == "grayscale":
                                 loss_colorful = sum([colorful_loss(values) for values in controlnet_cond_mid])
-                                loss += loss_colorful
+                                loss += 0.001 * loss_colorful
                     else:
                         loss += F.l1_loss(pixel_values.float(), controlnet_cond_mid.float(), reduction="mean")
                         if args.control_type == "grayscale":
                             loss_colorful = colorful_loss(controlnet_cond_mid)
-                            loss += loss_colorful
+                            loss += 0.001 * loss_colorful
                 #print(pixel_values.min(), pixel_values.max(), controlnet_cond_mid.min(), controlnet_cond_mid.max())
 
                 accelerator.backward(loss)

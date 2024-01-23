@@ -84,12 +84,9 @@ If our work is useful for your research, please consider citing:
     @inproceedings{yang2023pasd,
 	    title={Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization},
 	    author={Tao Yang, Peiran Ren, Xuansong Xie, and Lei Zhang},
-	    booktitle={Arxiv},
+	    booktitle={arXiv:2308.14469},
 	    year={2023}
     }
-    
-## License
-© Alibaba, 2023. For academic and non-commercial use only.
 
 ## Acknowledgments
 Our project is based on [diffusers](https://github.com/huggingface/diffusers).
