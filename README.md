@@ -21,6 +21,10 @@ _<sup>2</sup>[Department of Computing, The Hong Kong Polytechnic University](htt
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
+(2024-3-18) Please have a try on our colorization model via ```python test_pasd.y --pasd_model_path runs/pasd_color/checkpoint-180000 --control_type grayscale high_level_info caption --use_pasd_light```. You should use the noise scheduler provided in ```runs/pasd_color/scheduler```. We update the noise scheduler to ensure zero-terminal SNR in order to avoid the leaking residual signal from RGB image during training. Please read the updated paper for more details.
+
+(2024-3-18) We have updated the [paper](https://arxiv.org/abs/2308.14469v3). The [weights](https://huggingface.co/yangtao9009/PASD) and [datasets](https://huggingface.co/datasets/yangtao9009/PASD_dataset) are now available on Huggingface.
+
 (2024-1-16) You may also want to check our new updates [SeeSR](https://github.com/cswry/seesr) and [Phantom](https://github.com/dreamoving/Phantom). 
 
 (2023-10-20) Add additional noise level via ```--added_noise_level``` and the SR result achieves a great balance between "extremely-detailed" and "over-smoothed". Very interesting!. You can control the SR's detail level freely. 

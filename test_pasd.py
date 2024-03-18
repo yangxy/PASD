@@ -3,6 +3,7 @@ import sys
 import cv2
 import glob
 import argparse
+import open_clip
 import numpy as np
 from PIL import Image
 import safetensors.torch
@@ -39,7 +40,10 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
         from models.pasd.unet_2d_condition import UNet2DConditionModel
         from models.pasd.controlnet import ControlNetModel
     # Load scheduler, tokenizer and models.
-    scheduler = UniPCMultistepScheduler.from_pretrained(args.pretrained_model_path, subfolder="scheduler")
+    if args.control_type=="grayscale":
+        scheduler = UniPCMultistepScheduler.from_pretrained("/".join(args.pasd_model_path.split("/")[:-1]), subfolder="scheduler")
+    else:
+        scheduler = UniPCMultistepScheduler.from_pretrained(args.pretrained_model_path, subfolder="scheduler")
     text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_path, subfolder="text_encoder")
     tokenizer = CLIPTokenizer.from_pretrained(args.pretrained_model_path, subfolder="tokenizer")
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_path, subfolder="vae")
@@ -116,7 +120,7 @@ def load_high_level_net(args, device='cuda'):
             model, vis_processors, _ = load_model_and_preprocess(name="blip_caption", model_type="base_coco", is_eval=True, device=device)
             return model, vis_processors, None
         else:
-            import open_clip
+            #import open_clip
             model, _, transform = open_clip.create_model_and_transforms(
                 model_name="coca_ViT-L-14",
                 pretrained="mscoco_finetuned_laion2B-s13B-b90k"
@@ -191,6 +195,8 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 
     resize_preproc = transforms.Compose([
         transforms.Resize(args.process_size, interpolation=transforms.InterpolationMode.BILINEAR),
+    ] if args.control_type=="realisr" else [
+        transforms.Resize(args.process_size, max_size=args.process_size*2, interpolation=transforms.InterpolationMode.BILINEAR),
     ])
                 
     if accelerator.is_main_process:
@@ -214,8 +220,8 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
                 validation_image = validation_image.convert("L").convert("RGB")
                 orig_img = validation_image.copy()
                 validation_prompt = get_validation_prompt(args, validation_image, model, preprocess, category, accelerator.device)
-                validation_prompt = validation_prompt.replace("a black and white photo", "a color photo")
-                negative_prompt = "b&w"
+                validation_prompt = validation_prompt.replace("black and white", "color")
+                negative_prompt = "b&w, color bleeding"
             else:
                 raise NotImplementedError
             
@@ -223,11 +229,11 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
 
             ori_width, ori_height = validation_image.size
             resize_flag = False
-            rscale = args.upscale
+            rscale = args.upscale if args.control_type=="realisr" else 1
 
             validation_image = validation_image.resize((validation_image.size[0]*rscale, validation_image.size[1]*rscale))
 
-            if min(validation_image.size) < args.process_size:
+            if min(validation_image.size) < args.process_size or args.control_type=="grayscale":
                 validation_image = resize_preproc(validation_image)
 
             validation_image = validation_image.resize((validation_image.size[0]//8*8, validation_image.size[1]//8*8))
@@ -243,11 +249,12 @@ def main(args, enable_xformers_memory_efficient_attention=True,):
                 print(e)
                 continue
 
-            if args.control_type=="realisr": #args.conditioning_scale < 1.0:
-                image = wavelet_color_fix(image, validation_image)
+            if args.control_type=="realisr": 
+                if True: #args.conditioning_scale < 1.0:
+                    image = wavelet_color_fix(image, validation_image)
 
-            if args.control_type=="realisr" and resize_flag: 
-                image = image.resize((ori_width*rscale, ori_height*rscale))
+                if resize_flag: 
+                    image = image.resize((ori_width*rscale, ori_height*rscale))
 
             name, ext = os.path.splitext(os.path.basename(image_name))
             if args.control_type=='grayscale':
@@ -274,7 +281,7 @@ if __name__ == "__main__":
     parser.add_argument("--prompt", type=str, default="", help="prompt for image generation")
     parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k", help="additional prompt")
     parser.add_argument("--negative_prompt", type=str, default="blurry, dotted, noise, raster lines, unclear, lowres, over-smoothed", help="negative prompt")
-    parser.add_argument("--image_path", type=str, default="samples/000080x2.png", help="test image path or folder")
+    parser.add_argument("--image_path", type=str, default="examples/dog.png", help="test image path or folder")
     parser.add_argument("--output_dir", type=str, default="output", help="output folder")
     parser.add_argument("--mixed_precision", type=str, default="fp16", help="mixed precision mode") # no/fp16/bf16
     parser.add_argument("--guidance_scale", type=float, default=9.0, help="classifier-free guidance scale")
@@ -293,7 +300,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_lcm_lora", action="store_true", help="use lcm-lora or not")
     parser.add_argument("--use_blip", action="store_true", help="use lcm-lora or not")
     parser.add_argument("--init_latent_with_noise", action="store_true", help="initial latent with pure noise or not")
-    parser.add_argument("--added_noise_level", type=int, default=400, help="additional noise level")
+    parser.add_argument("--added_noise_level", type=int, default=900, help="additional noise level")
     parser.add_argument("--offset_noise_scale", type=float, default=0.0, help="offset noise scale, not used")
     parser.add_argument("--seed", type=int, default=None, help="seed")
     args = parser.parse_args()
