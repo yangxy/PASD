@@ -22,7 +22,7 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
-(2024-3-18) Please have a try on our colorization model via ```python test_pasd.y --pasd_model_path runs/pasd_color/checkpoint-180000 --control_type grayscale high_level_info caption --use_pasd_light```. You should use the noise scheduler provided in ```runs/pasd_color/scheduler```. We update the noise scheduler to ensure zero-terminal SNR in order to avoid the leaking residual signal from RGB image during training. Please read the updated paper for more details.
+(2024-3-18) Please have a try on our colorization model via ```python test_pasd.y --pasd_model_path runs/pasd_color/checkpoint-180000 --control_type grayscale --high_level_info caption --use_pasd_light```. You should use the noise scheduler provided in ```runs/pasd_color/scheduler``` which has been updated to ensure zero-terminal SNR in order to avoid the leaking residual signal from RGB image during training. Please read the updated paper for more details.
 
 (2024-3-18) We have updated the [paper](https://arxiv.org/abs/2308.14469v3). The [weights](https://huggingface.co/yangtao9009/PASD) and [datasets](https://huggingface.co/datasets/yangtao9009/PASD_dataset) are now available on Huggingface.
 
@@ -88,8 +88,8 @@ If our work is useful for your research, please consider citing:
 
     @inproceedings{yang2023pasd,
 	    title={Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization},
-	    author={Tao Yang, Peiran Ren, Xuansong Xie, and Lei Zhang},
-	    booktitle={arXiv:2308.14469},
+	    author={Tao Yang, Rongyuan Wu, Peiran Ren, Xuansong Xie, and Lei Zhang},
+	    booktitle={arXiv:2308.14469v3},
 	    year={2023}
     }
 
