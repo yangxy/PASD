@@ -1,6 +1,6 @@
-# Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization
+# Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization (ECCV2024)
 
-[Paper](https://arxiv.org/abs/2308.14469v3)
+[Paper](https://arxiv.org/abs/2308.14469)
 
 [Tao Yang](https://cg.cs.tsinghua.edu.cn/people/~tyang)<sup>1</sup>, Rongyuan Wu<sup>2</sup>, Peiran Ren<sup>3</sup>, Xuansong Xie<sup>3</sup>, [Lei Zhang](https://www4.comp.polyu.edu.hk/~cslzhang)<sup>2</sup>  
 _<sup>1</sup>ByteDance Inc._  
@@ -22,6 +22,8 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## News
+(2024-7-1) Accepted by ECCV2024. A new version of our paper will be updated soon.
+
 (2024-3-18) Please have a try on our colorization model via ```python test_pasd.y --pasd_model_path runs/pasd_color/checkpoint-180000 --control_type grayscale --high_level_info caption --use_pasd_light```. You should use the noise scheduler provided in ```runs/pasd_color/scheduler``` which has been updated to ensure zero-terminal SNR in order to avoid the leaking residual signal from RGB image during training. Please read the updated paper for more details.
 
 (2024-3-18) We have updated the [paper](https://arxiv.org/abs/2308.14469v3). The [weights](https://huggingface.co/yangtao9009/PASD) and [datasets](https://huggingface.co/datasets/yangtao9009/PASD_dataset) are now available on Huggingface.
