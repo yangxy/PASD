@@ -91,7 +91,7 @@ If our work is useful for your research, please consider citing:
     @inproceedings{yang2023pasd,
 	    title={Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization},
 	    author={Tao Yang, Rongyuan Wu, Peiran Ren, Xuansong Xie, and Lei Zhang},
-	    booktitle={arXiv:2308.14469v3},
+	    booktitle={The European Conference on Computer Vision (ECCV) 2024},
 	    year={2023}
     }
 
