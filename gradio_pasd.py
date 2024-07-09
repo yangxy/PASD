@@ -95,8 +95,8 @@ def inference(input_image, prompt, a_prompt, n_prompt, denoise_steps, upscale, a
         rscale = upscale
         input_image = input_image.resize((input_image.size[0]*rscale, input_image.size[1]*rscale))
         
-        if min(validation_image.size) < process_size:
-            validation_image = resize_preproc(validation_image)
+        if min(input_image.size) < process_size:
+            input_image = resize_preproc(input_image)
 
         input_image = input_image.resize((input_image.size[0]//8*8, input_image.size[1]//8*8))
         width, height = input_image.size
