@@ -8,6 +8,8 @@ _<sup>2</sup>Department of Computing, The Hong Kong Polytechnic University_
 _<sup>3</sup>DAMO Academy, Alibaba Group_  
 
 ## News
+(2024-7-12) I am training a new PASD based on SDXL and will release soon. Stay tuned!
+
 (2024-7-1) Accepted by ECCV2024. A new version of our paper will be updated soon.
 
 (2024-3-18) Please have a try on our colorization model via ```python test_pasd.y --pasd_model_path runs/pasd_color/checkpoint-180000 --control_type grayscale --high_level_info caption --use_pasd_light```. You should use the noise scheduler provided in ```runs/pasd_color/scheduler``` which has been updated to ensure zero-terminal SNR in order to avoid the leaking residual signal from RGB image during training. Please read the updated paper for more details.
