@@ -7,20 +7,6 @@ _<sup>1</sup>ByteDance Inc._
 _<sup>2</sup>Department of Computing, The Hong Kong Polytechnic University_  
 _<sup>3</sup>DAMO Academy, Alibaba Group_  
 
-## Our model can do various tasks. Hope you can enjoy it.
-
-## Realistic Image SR
-<img src="samples/frog.gif" width="390px"/> <img src="samples/house.gif" width="390px"/>
-
-## Old photo restoration
-<img src="samples/629e4da70703193b.gif" width="390px" height="520"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px" height="520"/>
-
-## Personalized Stylization
-<img src="samples/000020x2.gif" width="390px"/> <img src="samples/000067x2.gif" width="390px"/>
-
-## Colorization
-<img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
-
 ## News
 (2024-7-1) Accepted by ECCV2024. A new version of our paper will be updated soon.
 
@@ -45,6 +31,20 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 (2023-09-11) Upload pre-trained models.
 
 (2023-09-07) Upload source codes.
+
+## Our model can do various tasks. Hope you can enjoy it.
+
+## Realistic Image SR
+<img src="samples/frog.gif" width="390px"/> <img src="samples/house.gif" width="390px"/>
+
+## Old photo restoration
+<img src="samples/629e4da70703193b.gif" width="390px" height="520"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px" height="520"/>
+
+## Personalized Stylization
+<img src="samples/000020x2.gif" width="390px"/> <img src="samples/000067x2.gif" width="390px"/>
+
+## Colorization
+<img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
 ## Usage
 - Clone this repository:
@@ -84,6 +84,9 @@ If the default setting does not yield good results, try different ``--pasd_model
 ```bash
 python gradio_pasd.py
 ```
+
+## Main idea
+<img src="samples/pasd_arch.png" width="780px"/>
 
 ## Citation
 If our work is useful for your research, please consider citing:

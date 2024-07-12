@@ -9,11 +9,11 @@ from collections import OrderedDict
 import torch
 import torch.nn.functional as F
 
-from basicsr.data.transforms import augment
-from basicsr.data.degradations import circular_lowpass_kernel, random_mixed_kernels
-from basicsr.utils import DiffJPEG, USMSharp, img2tensor, tensor2img
-from basicsr.utils.img_process_util import filter2D
-from basicsr.data.degradations import random_add_gaussian_noise_pt, random_add_poisson_noise_pt
+from .basicsr.data.transforms import augment
+from .basicsr.data.degradations import circular_lowpass_kernel, random_mixed_kernels
+from .basicsr.utils import DiffJPEG, USMSharp, img2tensor, tensor2img
+from .basicsr.utils.img_process_util import filter2D
+from .basicsr.data.degradations import random_add_gaussian_noise_pt, random_add_poisson_noise_pt
 from torchvision.transforms.functional import (adjust_brightness, adjust_contrast, adjust_hue, adjust_saturation,
                                                normalize, rgb_to_grayscale)
 
