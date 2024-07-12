@@ -2,7 +2,7 @@ diffusers==0.25.0
 accelerate
 transformers
 xformers
-basicsr
+git+https://github.com/XPixelGroup/BasicSR.git # for https://github.com/XPixelGroup/BasicSR/pull/650
 ultralytics
 webdataset
 open_clip_torch
