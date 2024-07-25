@@ -101,12 +101,6 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     #validation_pipeline.enable_vae_tiling()
     #validation_pipeline._init_tiled_vae(encoder_tile_size=args.encoder_tiled_size, decoder_tile_size=args.decoder_tiled_size)
 
-    if args.use_lcm_lora:
-        # load and fuse lcm lora
-        validation_pipeline.load_lora_weights(args.lcm_lora_path)
-        validation_pipeline.fuse_lora()
-        validation_pipeline.scheduler = LCMScheduler.from_config(validation_pipeline.scheduler.config)
-
     return validation_pipeline
 
 def load_high_level_net(args, device='cuda'):
@@ -278,8 +272,7 @@ def main(args, enable_xformers_memory_efficient_attention=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pretrained_model_path", type=str, default="../sora_dit/ckpts/stable-diffusion-xl-base-1.0", help="path of base SD model")
-    parser.add_argument("--lcm_lora_path", type=str, default="checkpoints/lcm-lora-sdv1-5", help="path of LCM lora model")
+    parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-xl-base-1.0", help="path of base SD model")
     parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_sdxl/checkpoint-120000", help="path of PASD model")
     parser.add_argument("--personalized_model_path", type=str, default="majicmixRealistic_v7.safetensors", help="name of personalized dreambooth model, path is 'checkpoints/personalized_models'") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr", help="task name")
@@ -304,8 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("--upscale", type=int, default=4, help="upsampling scale")
     parser.add_argument("--use_personalized_model", action="store_true", help="use personalized model or not")
     parser.add_argument("--use_pasd_light", action="store_true", help="use pasd or pasd_light")
-    parser.add_argument("--use_lcm_lora", action="store_true", help="use lcm-lora or not")
-    parser.add_argument("--use_blip", action="store_true", help="use lcm-lora or not")
+    parser.add_argument("--use_blip", action="store_true", help="use blip or not")
     parser.add_argument("--seed", type=int, default=None, help="seed")
     args = parser.parse_args()
     main(args)
