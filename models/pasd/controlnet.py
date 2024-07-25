@@ -19,13 +19,12 @@ from torch import nn
 from torch.nn import functional as F
 
 from diffusers.configuration_utils import ConfigMixin, register_to_config
-from diffusers.loaders import FromOriginalControlnetMixin
+from diffusers.loaders import FromOriginalModelMixin
 from diffusers.utils import BaseOutput, logging
 from diffusers.models.attention_processor import AttentionProcessor, AttnProcessor
 from diffusers.models.embeddings import TextImageProjection, TextImageTimeEmbedding, TextTimeEmbedding, TimestepEmbedding, Timesteps
 from diffusers.models.modeling_utils import ModelMixin
-from basicsr.archs.rrdbnet_arch import RRDB
-from diffusers.models.unet_2d_blocks import (
+from diffusers.models.unets.unet_2d_blocks import (
     CrossAttnDownBlock2D,
     DownBlock2D,
     UNetMidBlock2DCrossAttn,
@@ -82,6 +81,7 @@ class ControlNetConditioningEmbedding(nn.Module):
         self.conv_in = nn.Conv2d(conditioning_channels, block_out_channels[0], kernel_size=3, padding=1)
 
         if self.use_rrdb:
+            from basicsr.archs.rrdbnet_arch import RRDB
             num_rrdb_block = 2
             layers = (RRDB(block_out_channels[0], block_out_channels[0]) for i in range(num_rrdb_block))
             self.preprocesser = nn.Sequential(*layers)
@@ -122,7 +122,7 @@ class ControlNetConditioningEmbedding(nn.Module):
         return [embedding, out_rgbs] if self.return_rgbs else embedding
 
 
-class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalControlnetMixin):
+class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
     """
     A ControlNet model.
 

@@ -19,9 +19,9 @@ import torch.nn.functional as F
 from torch import nn
 
 from diffusers.utils import is_torch_version, logging
-from diffusers.models.dual_transformer_2d import DualTransformer2DModel
+from diffusers.models.transformers.dual_transformer_2d import DualTransformer2DModel
 from diffusers.models.resnet import ResnetBlock2D, Upsample2D
-from diffusers.models.unet_2d_blocks import UpBlock2D
+from diffusers.models.transformers.unet_2d_blocks import UpBlock2D
 from .transformer_2d import Transformer2DModel
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name

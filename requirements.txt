@@ -1,4 +1,4 @@
-diffusers==0.25.0
+diffusers==0.29.2
 accelerate
 transformers
 xformers
