@@ -14,7 +14,7 @@ import torch.utils.checkpoint
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
-from diffusers import AutoencoderKL, PNDMScheduler, LCMScheduler, UniPCMultistepScheduler, EulerAncestralDiscreteScheduler, EulerDiscreteScheduler#, StableDiffusionControlNetPipeline
+from diffusers import AutoencoderKL, PNDMScheduler, LCMScheduler, UniPCMultistepScheduler, EulerAncestralDiscreteScheduler, EulerDiscreteScheduler, StableDiffusionXLImg2ImgPipeline
 from diffusers.utils import check_min_version
 from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor, AutoTokenizer, CLIPTextModelWithProjection
@@ -101,7 +101,15 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
     #validation_pipeline.enable_vae_tiling()
     #validation_pipeline._init_tiled_vae(encoder_tile_size=args.encoder_tiled_size, decoder_tile_size=args.decoder_tiled_size)
 
-    return validation_pipeline
+    if args.use_refiner:
+        refiner_pipeline = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+            args.pretrained_refiner_path, torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+        )
+        refiner_pipeline = refiner_pipeline.to(accelerator.device)
+    else:
+        refiner_pipeline = None
+
+    return validation_pipeline, refiner_pipeline
 
 def load_high_level_net(args, device='cuda'):
     if args.high_level_info == "classification":
@@ -192,7 +200,7 @@ def main(args, enable_xformers_memory_efficient_attention=False):
     if accelerator.is_main_process:
         accelerator.init_trackers("PASD")
 
-    pipeline = load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_attention)
+    pipeline, refiner_pipeline = load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_attention)
     model, preprocess, category = load_high_level_net(args, accelerator.device)
 
     resize_preproc = transforms.Compose([
@@ -248,6 +256,9 @@ def main(args, enable_xformers_memory_efficient_attention=False):
                 guess_mode=False,
             ).images[0]
 
+            if args.use_refiner:
+                image = refiner_pipeline(validation_prompt, image=image).images
+
             if args.control_type=="realisr": 
                 if True: #args.conditioning_scale < 1.0:
                     image = wavelet_color_fix(image, validation_image)
@@ -273,6 +284,7 @@ def main(args, enable_xformers_memory_efficient_attention=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-xl-base-1.0", help="path of base SD model")
+    parser.add_argument("--pretrained_refiner_path", type=str, default="checkpoints/stable-diffusion-xl-refiner-1.0", help="path of refiner SDXL model")
     parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_sdxl/checkpoint-120000", help="path of PASD model")
     parser.add_argument("--personalized_model_path", type=str, default="majicmixRealistic_v7.safetensors", help="name of personalized dreambooth model, path is 'checkpoints/personalized_models'") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr", help="task name")
@@ -298,6 +310,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_personalized_model", action="store_true", help="use personalized model or not")
     parser.add_argument("--use_pasd_light", action="store_true", help="use pasd or pasd_light")
     parser.add_argument("--use_blip", action="store_true", help="use blip or not")
+    parser.add_argument("--use_refiner", action="store_true", help="use refiner or not")
     parser.add_argument("--seed", type=int, default=None, help="seed")
     args = parser.parse_args()
     main(args)
