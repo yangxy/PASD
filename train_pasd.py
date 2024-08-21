@@ -27,9 +27,9 @@ import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 import transformers
-from accelerate import Accelerator
-from accelerate.logging import get_logger
-from accelerate.utils import ProjectConfiguration, set_seed
+from pasd.accelerate import Accelerator
+from pasd.accelerate.logging import get_logger
+from pasd.accelerate.utils import ProjectConfiguration, set_seed
 #from datasets import load_dataset
 from huggingface_hub import create_repo, upload_folder
 from packaging import version
@@ -48,10 +48,10 @@ from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 
-from dataloader.webdatasets import WebImageDataset, Text2ImageDataset
-from dataloader.localdatasets import LocalImageDataset
-from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
-from myutils.img_util import colorful_loss
+from pasd.dataloader.webdatasets import WebImageDataset, Text2ImageDataset
+from pasd.dataloader.localdatasets import LocalImageDataset
+from pasd.pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
+from pasd.myutils.img_util import colorful_loss
 
 if is_wandb_available():
     import wandb

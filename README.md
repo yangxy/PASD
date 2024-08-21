@@ -50,7 +50,14 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 ## Colorization
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
-## Usage
+## Installation
+### Installation using pip
+The package is not yet hosted in PyPI, so please install from github:
+```
+
+```
+
+## Development
 - Clone this repository:
 ```bash
 git clone https://github.com/yangxy/PASD.git
@@ -74,6 +81,7 @@ if you want to train pasd_light, use ``--use_pasd_light``.
 Download our pre-trained models [pasd](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd.zip) | [pasd_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_rrdb.zip) | [pasd_light](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light.zip) | [pasd_light_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light_rrdb.zip), and put them into ``runs/``. 
 
 ```bash
+pip install -r requirements-test.txt  # install additional dependencies
 python test_pasd.py # --use_pasd_light --use_personalized_model
 ```
 Please read the arguments in ``test_pasd.py`` carefully. We adopt the tiled vae method proposed by [multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111) to save GPU memory.

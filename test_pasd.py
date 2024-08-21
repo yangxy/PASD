@@ -20,9 +20,9 @@ from diffusers.utils import check_min_version
 from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor
 
-from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
-from myutils.misc import load_dreambooth_lora
-from myutils.wavelet_color_fix import wavelet_color_fix
+from pasd.pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
+from pasd.myutils.misc import load_dreambooth_lora
+from pasd.myutils.wavelet_color_fix import wavelet_color_fix
 #from annotator.retinaface import RetinaFaceDetection
 
 sys.path.append('PASD')
