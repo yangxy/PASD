@@ -54,7 +54,9 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 ### Installation using pip
 The package is not yet hosted in PyPI, so please install from github:
 ```
-
+pip install torch  # required by xformers
+pip install git+https://github.com/yangxy/PASD.git
+#or: pip install git+ssh://git@github.com/yangxy/PASD.git
 ```
 
 ## Development
@@ -62,6 +64,7 @@ The package is not yet hosted in PyPI, so please install from github:
 ```bash
 git clone https://github.com/yangxy/PASD.git
 cd PASD
+pip install -e .
 ```
 
 - Download SD1.5 models from [huggingface](https://huggingface.co/runwayml/stable-diffusion-v1-5) and put them into ``checkpoints/stable-diffusion-v1-5``. 
