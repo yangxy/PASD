@@ -557,11 +557,11 @@ def parse_args(input_args=None):
 
 def main(args):
     if args.use_pasd_light:
-        from models.pasd_light.unet_2d_condition import UNet2DConditionModel
-        from models.pasd_light.controlnet import ControlNetModel
+        from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd_light.controlnet import ControlNetModel
     else:
-        from models.pasd.unet_2d_condition import UNet2DConditionModel
-        from models.pasd.controlnet import ControlNetModel
+        from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd.controlnet import ControlNetModel
 
     logging_dir = Path(args.output_dir, args.logging_dir)
 

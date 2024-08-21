@@ -43,7 +43,7 @@ from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from diffusers.pipelines.controlnet.multicontrolnet import MultiControlNetModel
 
-from myutils.vaehook import VAEHook, perfcount
+from ..myutils.vaehook import VAEHook, perfcount
 
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name

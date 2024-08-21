@@ -34,11 +34,11 @@ logger = get_logger(__name__, log_level="INFO")
 
 def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_attention):
     if args.use_pasd_light:
-        from models.pasd_light.unet_2d_condition import UNet2DConditionModel
-        from models.pasd_light.controlnet import ControlNetModel
+        from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd_light.controlnet import ControlNetModel
     else:
-        from models.pasd.unet_2d_condition import UNet2DConditionModel
-        from models.pasd.controlnet import ControlNetModel
+        from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd.controlnet import ControlNetModel
     # Load scheduler, tokenizer and models.
     if args.control_type=="grayscale":
         scheduler = UniPCMultistepScheduler.from_pretrained("/".join(args.pasd_model_path.split("/")[:-1]), subfolder="scheduler")

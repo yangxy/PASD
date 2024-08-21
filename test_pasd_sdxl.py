@@ -22,7 +22,7 @@ from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor, AutoT
 from pasd.pipelines.pipeline_pasd_sdxl import StableDiffusionXLControlNetPipeline
 from pasd.myutils.misc import load_dreambooth_lora
 from pasd.myutils.wavelet_color_fix import wavelet_color_fix
-#from annotator.retinaface import RetinaFaceDetection
+#from pasd.annotator.retinaface import RetinaFaceDetection
 
 sys.path.append('PASD')
 
@@ -120,7 +120,7 @@ def load_high_level_net(args, device='cuda'):
         resnet.eval()
         return resnet, preprocess, weights.meta["categories"]
     elif args.high_level_info == "detection":
-        from annotator.yolo import YoLoDetection
+        from pasd.annotator.yolo import YoLoDetection
         yolo = YoLoDetection()
         return yolo, None, None
     elif args.high_level_info == "caption":

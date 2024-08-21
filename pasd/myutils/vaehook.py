@@ -70,7 +70,7 @@ import torch.nn.functional as F
 from einops import rearrange
 from diffusers.utils.import_utils import is_xformers_available
 
-import myutils.devices as devices
+from .devices import device, torch_gc, get_optimal_device, test_for_nans
 #from modules.shared import state
 #from ldm.modules.diffusionmodules.model import AttnBlock, MemoryEfficientAttnBlock
 
@@ -84,8 +84,7 @@ sd_flag = False
 
 def get_recommend_encoder_tile_size():
     if torch.cuda.is_available():
-        total_memory = torch.cuda.get_device_properties(
-            devices.device).total_memory // 2**20
+        total_memory = torch.cuda.get_device_properties(device).total_memory // 2**20
         if total_memory > 16*1000:
             ENCODER_TILE_SIZE = 3072
         elif total_memory > 12*1000:
@@ -101,8 +100,7 @@ def get_recommend_encoder_tile_size():
 
 def get_recommend_decoder_tile_size():
     if torch.cuda.is_available():
-        total_memory = torch.cuda.get_device_properties(
-            devices.device).total_memory // 2**20
+        total_memory = torch.cuda.get_device_properties(device).total_memory // 2**20
         if total_memory > 30*1000:
             DECODER_TILE_SIZE = 256
         elif total_memory > 16*1000:
@@ -576,17 +574,17 @@ def perfcount(fn):
         ts = time()
 
         if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats(devices.device)
-        devices.torch_gc()
+            torch.cuda.reset_peak_memory_stats(device)
+        torch_gc()
         gc.collect()
 
         ret = fn(*args, **kwargs)
 
-        devices.torch_gc()
+        torch_gc()
         gc.collect()
         if torch.cuda.is_available():
-            vram = torch.cuda.max_memory_allocated(devices.device) / 2**20
-            torch.cuda.reset_peak_memory_stats(devices.device)
+            vram = torch.cuda.max_memory_allocated(device) / 2**20
+            torch.cuda.reset_peak_memory_stats(device)
             print(
                 f'[Tiled VAE]: Done in {time() - ts:.3f}s, max VRAM alloc {vram:.3f} MB')
         else:
@@ -639,7 +637,7 @@ class GroupNormParam:
         mean = torch.vstack(self.mean_list)
         max_value = max(self.pixel_list)
         pixels = torch.tensor(
-            self.pixel_list, dtype=torch.float32, device=devices.device) / max_value
+            self.pixel_list, dtype=torch.float32, device=device) / max_value
         sum_pixels = torch.sum(pixels)
         pixels = pixels.unsqueeze(
             1) / sum_pixels
@@ -692,7 +690,7 @@ class VAEHook:
         original_device = next(self.net.parameters()).device
         try:
             if self.to_gpu:
-                self.net.to(devices.get_optimal_device())
+                self.net.to(get_optimal_device())
             if max(H, W) <= self.pad * 2 + self.tile_size:
                 print("[Tiled VAE]: the input size is tiny and unnecessary to tile.")
                 return self.net.original_forward(x)
@@ -811,7 +809,7 @@ class VAEHook:
             else:
                 tile = task[1](tile)
             try:
-                devices.test_for_nans(tile, "vae")
+                test_for_nans(tile, "vae")
             except:
                 print(f'Nan detected in fast mode estimation. Fast mode disabled.')
                 return False
@@ -883,7 +881,7 @@ class VAEHook:
         result = None
         result_approx = None
         #try:
-        #    with devices.autocast():
+        #    with autocast():
         #        result_approx = torch.cat([F.interpolate(cheap_approximation(x).unsqueeze(0), scale_factor=opt_f, mode='nearest-exact') for x in z], dim=0).cpu()
         #except: pass
         # Free memory of input latent tensor
@@ -938,7 +936,7 @@ class VAEHook:
 
                 # check for NaNs in the tile.
                 # If there are NaNs, we abort the process to save user's time
-                #devices.test_for_nans(tile, "vae")
+                #test_for_nans(tile, "vae")
 
                 #print(tiles[i].shape, tile.shape, i, num_tiles)
                 if len(task_queue) == 0:
