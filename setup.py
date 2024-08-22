@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def read_requirements():
@@ -14,6 +14,6 @@ setup(
         "[ECCV2024] Pixel-Aware Stable Diffusion for Realistic "
         "Image Super-Resolution and Personalized Stylization"
     ),
-    packages=["pasd"],
+    packages=find_packages(),
     install_requires=read_requirements(),
 )
