@@ -54,10 +54,16 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 ### Installation using pip
 The package is not yet hosted in PyPI, so please install from github:
 ```
-pip install torch  # required by xformers
+#pip install torch  # required by xformers, which is unavailable on Mac
+
 pip install git+https://github.com/yangxy/PASD.git
 #or: pip install git+ssh://git@github.com/yangxy/PASD.git
 ```
+Download checkpoint config files from `main` branch to local directory `./checkpoints`:
+```
+wget -O - https://github.com/yangxy/PASD/archive/main.tar.gz | tar xz --strip=1 "PASD-main/checkpoints"
+```
+After this, download model pickle files to the `./checkpoints` and you'll be able to create models via `from_pretrained()`.
 
 ## Development
 - Clone this repository:
