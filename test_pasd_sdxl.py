@@ -167,7 +167,7 @@ def get_validation_prompt(args, image, model, preprocess, category, device='cuda
         if args.use_blip:
             image = preprocess["eval"](image).unsqueeze(0).to(device)
             caption = model.generate({"image": image}, num_captions=1)[0]
-            caption = caption.replace("blurry", "clear").replace("noisy", "clean") #
+            caption = caption.replace("blurry", "clear").replace("noisy", "clean").replace("painting", "photo") #
             validation_prompt = caption if args.prompt=="" else f"{caption}, {args.prompt}"
         else:
             import open_clip
@@ -175,7 +175,7 @@ def get_validation_prompt(args, image, model, preprocess, category, device='cuda
             with torch.no_grad(), torch.cuda.amp.autocast():
                 generated = model.generate(image)
             caption = open_clip.decode(generated[0]).split("<end_of_text>")[0].replace("<start_of_text>", "")
-            caption = caption.replace("blurry", "clear").replace("noisy", "clean") #
+            caption = caption.replace("blurry", "clear").replace("noisy", "clean").replace("painting", "photo") #
             validation_prompt = caption if args.prompt=="" else f"{caption} {args.prompt}"
     else:
         validation_prompt = "" if args.prompt=="" else f"{args.prompt}, "
@@ -257,7 +257,7 @@ def main(args, enable_xformers_memory_efficient_attention=False):
             ).images[0]
 
             if args.use_refiner:
-                image = refiner_pipeline(validation_prompt, image=image).images
+                image = refiner_pipeline(validation_prompt, image=image, strength=0.1).images
 
             if args.control_type=="realisr": 
                 if True: #args.conditioning_scale < 1.0:
@@ -285,28 +285,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-xl-base-1.0", help="path of base SD model")
     parser.add_argument("--pretrained_refiner_path", type=str, default="checkpoints/stable-diffusion-xl-refiner-1.0", help="path of refiner SDXL model")
-    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_sdxl/checkpoint-120000", help="path of PASD model")
-    parser.add_argument("--personalized_model_path", type=str, default="majicmixRealistic_v7.safetensors", help="name of personalized dreambooth model, path is 'checkpoints/personalized_models'") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
+    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_sdxl/checkpoint-200000", help="path of PASD model")
+    parser.add_argument("--personalized_model_path", type=str, default=None, help="name of personalized dreambooth model, path is 'checkpoints/personalized_models'") # toonyou_beta3.safetensors, majicmixRealistic_v6.safetensors, unet_disney
     parser.add_argument("--control_type", choices=['realisr', 'grayscale'], nargs='?', default="realisr", help="task name")
     parser.add_argument('--high_level_info', choices=['classification', 'detection', 'caption'], nargs='?', default='caption', help="high level information for prompt generation")
     parser.add_argument("--prompt", type=str, default="", help="prompt for image generation")
-    parser.add_argument("--added_prompt", type=str, default="clean, high-resolution, 8k", help="additional prompt")
-    parser.add_argument("--negative_prompt", type=str, default="blurry, dotted, noise, raster lines, unclear, lowres, over-smoothed", help="negative prompt")
+    parser.add_argument("--added_prompt", type=str, default="photorealistic, clean, high-resolution, 8k", help="additional prompt")
+    parser.add_argument("--negative_prompt", type=str, default="blurry, dirty, messy, frames, deformed, dotted, noise, raster lines, unclear, lowres, over-smoothed, painting, ai generated", help="negative prompt")
     parser.add_argument("--image_path", type=str, default="datasets/realLQ", help="test image path or folder")
     #parser.add_argument("--image_path", type=str, default="examples/dog.png", help="test image path or folder")
     parser.add_argument("--output_dir", type=str, default="output/realLQ", help="output folder")
-    parser.add_argument("--mixed_precision", type=str, default="fp16", help="mixed precision mode") # no/fp16/bf16
+    parser.add_argument("--mixed_precision", type=str, default="bf16", help="mixed precision mode") # no/fp16/bf16
     parser.add_argument("--guidance_scale", type=float, default=7.0, help="classifier-free guidance scale")
-    parser.add_argument("--conditioning_scale", type=float, default=0.5, help="conditioning scale for controlnet")
+    parser.add_argument("--conditioning_scale", type=float, default=0.8, help="conditioning scale for controlnet")
     parser.add_argument("--blending_alpha", type=float, default=0.6, help="blending alpha for personalized model")
     parser.add_argument("--multiplier", type=float, default=1.0, help="multiplier for personalized lora model")
-    parser.add_argument("--num_inference_steps", type=int, default=20, help="denoising steps")
-    parser.add_argument("--process_size", type=int, default=1024, help="minimal input size for processing") # 512?
+    parser.add_argument("--num_inference_steps", type=int, default=25, help="denoising steps")
+    parser.add_argument("--process_size", type=int, default=1280, help="minimal input size for processing") # 512?
     parser.add_argument("--decoder_tiled_size", type=int, default=512, help="decoder tile size for saving GPU memory") # for 24G
     parser.add_argument("--encoder_tiled_size", type=int, default=2048, help="encoder tile size for saving GPU memory") # for 24G
-    parser.add_argument("--latent_tiled_size", type=int, default=320, help="unet latent tile size for saving GPU memory") # for 24G
+    parser.add_argument("--latent_tiled_size", type=int, default=180, help="unet latent tile size for saving GPU memory") # for 24G
     parser.add_argument("--latent_tiled_overlap", type=int, default=8, help="unet lantent overlap size for saving GPU memory") # for 24G
-    parser.add_argument("--upscale", type=int, default=4, help="upsampling scale")
+    parser.add_argument("--upscale", type=int, default=2, help="upsampling scale")
     parser.add_argument("--use_personalized_model", action="store_true", help="use personalized model or not")
     parser.add_argument("--use_pasd_light", action="store_true", help="use pasd or pasd_light")
     parser.add_argument("--use_blip", action="store_true", help="use blip or not")

@@ -8,9 +8,11 @@ _<sup>2</sup>Department of Computing, The Hong Kong Polytechnic University_
 _<sup>3</sup>DAMO Academy, Alibaba Group_  
 
 ## News
+(2024-9-4) [PASD-SDXL](https://huggingface.co/yangtao9009/PASD-SDXL) are now publicly available. Please have a try via ```python3 test_pasd_sdxl.py```!
+
 (2024-8-15) PASD-SDXL will be released soon. It surpasses the PASD-SD1.5 a lot. Stay tuned!
-<img src="samples/RealPhoto60_06.png" width="780px"/> 
-<img src="samples/RealPhoto60_42.png" width="780px"/>
+<img src="samples/RealPhoto60_06.png" width="390px"/> <img src="samples/RealPhoto60_22.png" width="390px"/>
+<img src="samples/RealPhoto60_09.png" width="390px"/> <img src="samples/RealPhoto60_56.png" width="390px"/>
 
 (2024-7-1) Accepted by ECCV2024. A new version of our paper will be updated soon.
 
