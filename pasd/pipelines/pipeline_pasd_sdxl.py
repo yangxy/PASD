@@ -108,7 +108,19 @@ EXAMPLE_DOC_STRING = """
         ... ).images[0]
         ```
 """
-
+# Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.rescale_noise_cfg
+def rescale_noise_cfg(noise_cfg, noise_pred_text, guidance_rescale=0.0):
+    """
+    Rescale `noise_cfg` according to `guidance_rescale`. Based on findings of [Common Diffusion Noise Schedules and
+    Sample Steps are Flawed](https://arxiv.org/pdf/2305.08891.pdf). See Section 3.4
+    """
+    std_text = noise_pred_text.std(dim=list(range(1, noise_pred_text.ndim)), keepdim=True)
+    std_cfg = noise_cfg.std(dim=list(range(1, noise_cfg.ndim)), keepdim=True)
+    # rescale the results from guidance (fixes overexposure)
+    noise_pred_rescaled = noise_cfg * (std_text / std_cfg)
+    # mix with the original results from guidance by factor guidance_rescale to avoid "plain looking" images
+    noise_cfg = guidance_rescale * noise_pred_rescaled + (1 - guidance_rescale) * noise_cfg
+    return noise_cfg
 
 # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.retrieve_timesteps
 def retrieve_timesteps(
@@ -860,7 +872,7 @@ class StableDiffusionXLControlNetPipeline(
     # Copied from diffusers.pipelines.controlnet.pipeline_controlnet.StableDiffusionControlNetPipeline.prepare_image
     def prepare_image(
         self,
-        image,
+        images,
         width,
         height,
         batch_size,
@@ -870,16 +882,20 @@ class StableDiffusionXLControlNetPipeline(
         do_classifier_free_guidance=False,
         guess_mode=False,
     ):
-        image = self.control_image_processor.preprocess(image, height=height, width=width).to(dtype=torch.float32)
+        outs = []
+        for image in images:
+            image = self.control_image_processor.preprocess(image, height=height, width=width).to(dtype=torch.float32)
+            outs.append(image)
+        image = torch.cat(outs, dim=0)
         image_batch_size = image.shape[0]
 
-        if image_batch_size == 1:
-            repeat_by = batch_size
-        else:
-            # image batch size is the same as prompt batch size
-            repeat_by = num_images_per_prompt
+        # if image_batch_size == 1:
+        #     repeat_by = batch_size
+        # else:
+        #     # image batch size is the same as prompt batch size
+        #     repeat_by = num_images_per_prompt
 
-        image = image.repeat_interleave(repeat_by, dim=0)
+        # image = image.repeat_interleave(repeat_by, dim=0)
 
         image = image.to(device=device, dtype=dtype)
 
@@ -1020,7 +1036,24 @@ class StableDiffusionXLControlNetPipeline(
     def num_timesteps(self):
         return self._num_timesteps
 
-    @perfcount
+    def _gaussian_weights(self, tile_width, tile_height, nbatches):
+        """Generates a gaussian mask of weights for tile contributions"""
+        from numpy import pi, exp, sqrt
+        import numpy as np
+
+        latent_width = tile_width
+        latent_height = tile_height
+
+        var = 0.01
+        midpoint = (latent_width - 1) / 2  # -1 because index goes from 0 to latent_width - 1
+        x_probs = [exp(-(x-midpoint)*(x-midpoint)/(latent_width*latent_width)/(2*var)) / sqrt(2*pi*var) for x in range(latent_width)]
+        midpoint = latent_height / 2
+        y_probs = [exp(-(y-midpoint)*(y-midpoint)/(latent_height*latent_height)/(2*var)) / sqrt(2*pi*var) for y in range(latent_height)]
+
+        weights = np.outer(y_probs, x_probs)
+        return torch.tile(torch.tensor(weights, device=self.device), (nbatches, self.unet.config.in_channels, 1, 1))
+
+    #@perfcount
     @torch.no_grad()
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
@@ -1053,8 +1086,8 @@ class StableDiffusionXLControlNetPipeline(
         cross_attention_kwargs: Optional[Dict[str, Any]] = None,
         controlnet_conditioning_scale: Union[float, List[float]] = 1.0,
         guess_mode: bool = False,
-        control_guidance_start: Union[float, List[float]] = 0.0,
-        control_guidance_end: Union[float, List[float]] = 2.0,
+        control_guidance_start: Union[float, List[float]] = 0.2,
+        control_guidance_end: Union[float, List[float]] = 1.0,
         original_size: Tuple[int, int] = None,
         crops_coords_top_left: Tuple[int, int] = (0, 0),
         target_size: Tuple[int, int] = None,
@@ -1256,6 +1289,8 @@ class StableDiffusionXLControlNetPipeline(
         else:
             batch_size = prompt_embeds.shape[0]
 
+        if isinstance(image, list): batch_size = len(image)
+
         device = self._execution_device
 
         guess_mode = guess_mode
@@ -1286,8 +1321,9 @@ class StableDiffusionXLControlNetPipeline(
         )
 
         # 4. Prepare image
+        images = image if isinstance(image, list) else [image]
         image = self.prepare_image(
-            image=image,
+            images=images,
             width=width,
             height=height,
             batch_size=batch_size * num_images_per_prompt,
@@ -1318,6 +1354,7 @@ class StableDiffusionXLControlNetPipeline(
             latents,
             #image,
         )
+        latents = latents[:1].repeat(batch_size, 1, 1, 1)
 
         # 6.5 Optionally get Guidance Scale Embedding
         timestep_cond = None
@@ -1331,9 +1368,10 @@ class StableDiffusionXLControlNetPipeline(
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
 
         # 7.1 Create tensor stating which controlnets to keep
-        controlnet_keep = np.linspace(control_guidance_start, control_guidance_end, len(timesteps))**0.0
-        controlnet_keep = controlnet_keep.tolist()[::-1]
-        #print(controlnet_keep)
+        # controlnet_keep = np.linspace(control_guidance_start, control_guidance_end, len(timesteps))**0.5
+        # controlnet_keep = controlnet_keep.tolist()#[::-1]
+        # print(controlnet_keep)
+        controlnet_keep = [1] * num_inference_steps
 
         # 7.2 Prepare added time ids & embeddings
         if isinstance(image, list):
@@ -1367,6 +1405,15 @@ class StableDiffusionXLControlNetPipeline(
         else:
             negative_add_time_ids = add_time_ids
 
+        if batch_size > 1:
+            # print(prompt_embeds.shape, add_text_embeds.shape, add_time_ids.shape)
+            negative_prompt_embeds = negative_prompt_embeds.repeat(batch_size, 1, 1)
+            prompt_embeds = prompt_embeds.repeat(batch_size, 1, 1)
+            negative_pooled_prompt_embeds = negative_pooled_prompt_embeds.repeat(batch_size, 1)
+            add_text_embeds = add_text_embeds.repeat(batch_size, 1)
+            negative_add_time_ids = negative_add_time_ids.repeat(batch_size, 1)
+            add_time_ids = add_time_ids.repeat(batch_size, 1)
+
         if self.do_classifier_free_guidance:
             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
             add_text_embeds = torch.cat([negative_pooled_prompt_embeds, add_text_embeds], dim=0)
@@ -1374,7 +1421,7 @@ class StableDiffusionXLControlNetPipeline(
 
         prompt_embeds = prompt_embeds.to(device)
         add_text_embeds = add_text_embeds.to(device)
-        add_time_ids = add_time_ids.to(device).repeat(batch_size * num_images_per_prompt, 1)
+        add_time_ids = add_time_ids.to(device)#.repeat(batch_size * num_images_per_prompt, 1)
 
         # 8. Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
@@ -1427,41 +1474,166 @@ class StableDiffusionXLControlNetPipeline(
 
                 cond_scale = controlnet_conditioning_scale * controlnet_keep[i]
 
-                rgbs, down_block_res_samples, mid_block_res_sample = self.controlnet(
-                    control_model_input,
-                    t,
-                    encoder_hidden_states=controlnet_prompt_embeds,
-                    controlnet_cond=image,
-                    conditioning_scale=cond_scale,
-                    guess_mode=guess_mode,
-                    added_cond_kwargs=controlnet_added_cond_kwargs,
-                    return_dict=False,
-                )
+                _, _, h, w = latent_model_input.size()
+                tile_size, tile_overlap = (args.latent_tiled_size, args.latent_tiled_overlap) if args is not None else (256, 8)
+                if h*w<=tile_size*tile_size: #h<tile_size and w<tile_size: # tiled latent input
+                    # if batch_size > 1: controlnet_prompt_embeds = controlnet_prompt_embeds.repeat(batch_size, 1, 1)
+                    # print(control_model_input.shape, t.shape, controlnet_prompt_embeds.shape, image.shape)
+                    rgbs, down_block_res_samples, mid_block_res_sample = self.controlnet(
+                        control_model_input,
+                        t,
+                        encoder_hidden_states=controlnet_prompt_embeds,
+                        controlnet_cond=image,
+                        conditioning_scale=cond_scale,
+                        guess_mode=guess_mode,
+                        added_cond_kwargs=controlnet_added_cond_kwargs,
+                        return_dict=False,
+                    )
 
-                if guess_mode and self.do_classifier_free_guidance:
-                    # Infered ControlNet only for the conditional batch.
-                    # To apply the output of ControlNet to both the unconditional and conditional batches,
-                    # add 0 to the unconditional batch to keep it unchanged.
-                    down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in down_block_res_samples]
-                    mid_block_res_sample = torch.cat([torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
+                    if guess_mode and self.do_classifier_free_guidance:
+                        # Infered ControlNet only for the conditional batch.
+                        # To apply the output of ControlNet to both the unconditional and conditional batches,
+                        # add 0 to the unconditional batch to keep it unchanged.
+                        down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in down_block_res_samples]
+                        mid_block_res_sample = torch.cat([torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
 
-                # predict the noise residual
-                noise_pred = self.unet(
-                    latent_model_input,
-                    t,
-                    encoder_hidden_states=prompt_embeds,
-                    timestep_cond=timestep_cond,
-                    cross_attention_kwargs=self.cross_attention_kwargs,
-                    down_block_additional_residuals=down_block_res_samples,
-                    mid_block_additional_residual=mid_block_res_sample,
-                    added_cond_kwargs=added_cond_kwargs,
-                    return_dict=False,
-                )[0]
+                    # predict the noise residual
+                    noise_pred = self.unet(
+                        latent_model_input,
+                        t,
+                        encoder_hidden_states=prompt_embeds,
+                        timestep_cond=timestep_cond,
+                        cross_attention_kwargs=self.cross_attention_kwargs,
+                        down_block_additional_residuals=down_block_res_samples,
+                        mid_block_additional_residual=mid_block_res_sample,
+                        added_cond_kwargs=added_cond_kwargs,
+                        return_dict=False,
+                    )[0]
+                else:
+                    tile_size = min(tile_size, min(h, w))
+                    tile_weights = self._gaussian_weights(tile_size, tile_size, 1)
+
+                    grid_rows = 0
+                    cur_x = 0
+                    while cur_x < latent_model_input.size(-1):
+                        cur_x = max(grid_rows * tile_size-tile_overlap * grid_rows, 0)+tile_size
+                        grid_rows += 1
+
+                    grid_cols = 0
+                    cur_y = 0
+                    while cur_y < latent_model_input.size(-2):
+                        cur_y = max(grid_cols * tile_size-tile_overlap * grid_cols, 0)+tile_size
+                        grid_cols += 1
+
+                    input_list = []
+                    cond_list = []
+                    img_list = []
+                    noise_preds = []
+                    for row in range(grid_rows):
+                        noise_preds_row = []
+                        for col in range(grid_cols):
+                            if col < grid_cols-1 or row < grid_rows-1:
+                                # extract tile from input image
+                                ofs_x = max(row * tile_size-tile_overlap * row, 0)
+                                ofs_y = max(col * tile_size-tile_overlap * col, 0)
+                                # input tile area on total image
+                            if row == grid_rows-1:
+                                ofs_x = w - tile_size
+                            if col == grid_cols-1:
+                                ofs_y = h - tile_size
+
+                            input_start_x = ofs_x
+                            input_end_x = ofs_x + tile_size
+                            input_start_y = ofs_y
+                            input_end_y = ofs_y + tile_size
+
+                            # input tile dimensions
+                            input_tile = latent_model_input[:, :, input_start_y:input_end_y, input_start_x:input_end_x]
+                            input_list.append(input_tile)
+                            cond_tile = control_model_input[:, :, input_start_y:input_end_y, input_start_x:input_end_x]
+                            cond_list.append(cond_tile)
+                            img_tile = image[:, :, input_start_y*8:input_end_y*8, input_start_x*8:input_end_x*8]
+                            img_list.append(img_tile)
+
+                            if len(input_list) == batch_size or col == grid_cols-1:
+                                input_list_t = torch.cat(input_list, dim=0)
+                                cond_list_t = torch.cat(cond_list, dim=0)
+                                img_list_t = torch.cat(img_list, dim=0)
+                                #print(input_list_t.shape, cond_list_t.shape, img_list_t.shape, fg_mask_list_t.shape)
+
+                                _, down_block_res_samples, mid_block_res_sample = self.controlnet(
+                                    cond_list_t,
+                                    t,
+                                    encoder_hidden_states=controlnet_prompt_embeds,
+                                    controlnet_cond=img_list_t,
+                                    conditioning_scale=cond_scale,
+                                    guess_mode=guess_mode,
+                                    added_cond_kwargs=controlnet_added_cond_kwargs,
+                                    return_dict=False,
+                                )
+
+                                if guess_mode and self.do_classifier_free_guidance:
+                                    # Infered ControlNet only for the conditional batch.
+                                    # To apply the output of ControlNet to both the unconditional and conditional batches,
+                                    # add 0 to the unconditional batch to keep it unchanged.
+                                    down_block_res_samples = [torch.cat([torch.zeros_like(d), d]) for d in down_block_res_samples]
+                                    mid_block_res_sample = torch.cat([torch.zeros_like(mid_block_res_sample), mid_block_res_sample])
+
+                                # predict the noise residual
+                                model_out = self.unet(
+                                    input_list_t,
+                                    t,
+                                    timestep_cond=timestep_cond,
+                                    encoder_hidden_states=prompt_embeds,
+                                    cross_attention_kwargs=self.cross_attention_kwargs,
+                                    down_block_additional_residuals=down_block_res_samples,
+                                    mid_block_additional_residual=mid_block_res_sample,
+                                    added_cond_kwargs=added_cond_kwargs,
+                                    return_dict=False,
+                                )[0]
+
+                                #for sample_i in range(model_out.size(0)):
+                                #    noise_preds_row.append(model_out[sample_i].unsqueeze(0))
+                                input_list = []
+                                cond_list = []
+                                img_list = []
+
+                            noise_preds.append(model_out)
+
+                    # Stitch noise predictions for all tiles
+                    noise_pred = torch.zeros(latent_model_input.shape, device=latent_model_input.device, dtype=latent_model_input.dtype)
+                    contributors = torch.zeros(latent_model_input.shape, device=latent_model_input.device, dtype=latent_model_input.dtype)
+                    # Add each tile contribution to overall latents
+                    for row in range(grid_rows):
+                        for col in range(grid_cols):
+                            if col < grid_cols-1 or row < grid_rows-1:
+                                # extract tile from input image
+                                ofs_x = max(row * tile_size-tile_overlap * row, 0)
+                                ofs_y = max(col * tile_size-tile_overlap * col, 0)
+                                # input tile area on total image
+                            if row == grid_rows-1:
+                                ofs_x = w - tile_size
+                            if col == grid_cols-1:
+                                ofs_y = h - tile_size
+
+                            input_start_x = ofs_x
+                            input_end_x = ofs_x + tile_size
+                            input_start_y = ofs_y
+                            input_end_y = ofs_y + tile_size
+    
+                            noise_pred[:, :, input_start_y:input_end_y, input_start_x:input_end_x] += noise_preds[row*grid_cols + col] * tile_weights
+                            contributors[:, :, input_start_y:input_end_y, input_start_x:input_end_x] += tile_weights
+                    # Average overlapping areas with more than 1 contributor
+                    noise_pred /= contributors
 
                 # perform guidance
                 if self.do_classifier_free_guidance:
                     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
                     noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+                    # guidance_rescale = 0.7
+                    # if guidance_rescale > 0.0:
+                    #     noise_pred = rescale_noise_cfg(noise_pred, noise_pred_text, guidance_rescale=guidance_rescale)
 
                 # compute the previous noisy sample x_t -> x_t-1
                 latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
@@ -1512,8 +1684,8 @@ class StableDiffusionXLControlNetPipeline(
             else:
                 latents = latents / self.vae.config.scaling_factor
 
-            #print(latents.dtype, self.vae.dtype)
             image = self.vae.decode(latents, return_dict=False)[0]
+            # print(image.shape, image.min().item(), image.max().item())
 
             # cast back to fp16 if needed
             if needs_upcasting:
@@ -1521,7 +1693,7 @@ class StableDiffusionXLControlNetPipeline(
         else:
             image = latents
 
-        if not output_type == "latent":
+        if output_type == "pil":
             # apply watermark if available
             if self.watermark is not None:
                 image = self.watermark.apply_watermark(image)
