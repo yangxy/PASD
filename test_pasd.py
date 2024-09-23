@@ -20,9 +20,9 @@ from diffusers.utils import check_min_version
 from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor
 
-from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
-from myutils.misc import load_dreambooth_lora
-from myutils.wavelet_color_fix import wavelet_color_fix
+from pasd.pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
+from pasd.myutils.misc import load_dreambooth_lora
+from pasd.myutils.wavelet_color_fix import wavelet_color_fix
 #from annotator.retinaface import RetinaFaceDetection
 
 sys.path.append('PASD')
@@ -34,11 +34,11 @@ logger = get_logger(__name__, log_level="INFO")
 
 def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_attention):
     if args.use_pasd_light:
-        from models.pasd_light.unet_2d_condition import UNet2DConditionModel
-        from models.pasd_light.controlnet import ControlNetModel
+        from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd_light.controlnet import ControlNetModel
     else:
-        from models.pasd.unet_2d_condition import UNet2DConditionModel
-        from models.pasd.controlnet import ControlNetModel
+        from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd.controlnet import ControlNetModel
     # Load scheduler, tokenizer and models.
     if args.control_type=="grayscale":
         scheduler = UniPCMultistepScheduler.from_pretrained("/".join(args.pasd_model_path.split("/")[:-1]), subfolder="scheduler")

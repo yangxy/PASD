@@ -27,9 +27,9 @@ import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 import transformers
-from accelerate import Accelerator
-from accelerate.logging import get_logger
-from accelerate.utils import ProjectConfiguration, set_seed
+from pasd.accelerate import Accelerator
+from pasd.accelerate.logging import get_logger
+from pasd.accelerate.utils import ProjectConfiguration, set_seed
 #from datasets import load_dataset
 from huggingface_hub import create_repo, upload_folder
 from packaging import version
@@ -48,10 +48,10 @@ from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 
-from dataloader.webdatasets import WebImageDataset, Text2ImageDataset
-from dataloader.localdatasets import LocalImageDataset
-from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
-from myutils.img_util import colorful_loss
+from pasd.dataloader.webdatasets import WebImageDataset, Text2ImageDataset
+from pasd.dataloader.localdatasets import LocalImageDataset
+from pasd.pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
+from pasd.myutils.img_util import colorful_loss
 
 if is_wandb_available():
     import wandb
@@ -557,11 +557,11 @@ def parse_args(input_args=None):
 
 def main(args):
     if args.use_pasd_light:
-        from models.pasd_light.unet_2d_condition import UNet2DConditionModel
-        from models.pasd_light.controlnet import ControlNetModel
+        from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd_light.controlnet import ControlNetModel
     else:
-        from models.pasd.unet_2d_condition import UNet2DConditionModel
-        from models.pasd.controlnet import ControlNetModel
+        from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+        from pasd.models.pasd.controlnet import ControlNetModel
 
     logging_dir = Path(args.output_dir, args.logging_dir)
 

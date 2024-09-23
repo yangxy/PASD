@@ -6,7 +6,8 @@ import torch
 #from modules import errors
 
 if sys.platform == "darwin":
-    from modules import mac_specific
+    # from modules import mac_specific
+    raise NotImplementedError("Mac is not yet supported")
 
 
 def has_mps() -> bool:

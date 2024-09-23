@@ -14,20 +14,20 @@ from pytorch_lightning import seed_everything
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor
 from diffusers import AutoencoderKL, DDIMScheduler, PNDMScheduler, DPMSolverMultistepScheduler, UniPCMultistepScheduler
 
-from pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
-from myutils.misc import load_dreambooth_lora, rand_name
-from myutils.wavelet_color_fix import wavelet_color_fix
-from annotator.retinaface import RetinaFaceDetection
+from pasd.pipelines.pipeline_pasd import StableDiffusionControlNetPipeline
+from pasd.myutils.misc import load_dreambooth_lora, rand_name
+from pasd.myutils.wavelet_color_fix import wavelet_color_fix
+from pasd.annotator.retinaface import RetinaFaceDetection
 
 use_pasd_light = False
 face_detector = RetinaFaceDetection()
 
 if use_pasd_light:
-    from models.pasd_light.unet_2d_condition import UNet2DConditionModel
-    from models.pasd_light.controlnet import ControlNetModel
+    from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
+    from pasd.models.pasd_light.controlnet import ControlNetModel
 else:
-    from models.pasd.unet_2d_condition import UNet2DConditionModel
-    from models.pasd.controlnet import ControlNetModel
+    from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+    from pasd.models.pasd.controlnet import ControlNetModel
 
 pretrained_model_path = "checkpoints/stable-diffusion-v1-5"
 ckpt_path = "runs/pasd/checkpoint-100000"

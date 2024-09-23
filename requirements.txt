@@ -1,11 +1,10 @@
 diffusers==0.29.2
 accelerate
 transformers
-xformers
+xformers; sys_platform != 'darwin'
 ultralytics
 webdataset
 open_clip_torch
 einops
 gradio<4.0.0
 pytorch_lightning
-salesforce-lavis

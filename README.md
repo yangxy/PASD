@@ -52,11 +52,27 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 ## Colorization
 <img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
 
-## Usage
+## Installation
+### Installation using pip
+The package is not yet hosted in PyPI, so please install from github:
+```
+#pip install torch  # required by xformers, which is unavailable on Mac
+
+pip install git+https://github.com/yangxy/PASD.git
+#or: pip install git+ssh://git@github.com/yangxy/PASD.git
+```
+Download checkpoint config files from `main` branch to local directory `./checkpoints`:
+```
+wget -O - https://github.com/yangxy/PASD/archive/main.tar.gz | tar xz --strip=1 "PASD-main/checkpoints"
+```
+After this, download model pickle files to the `./checkpoints` and you'll be able to create models via `from_pretrained()`.
+
+## Development
 - Clone this repository:
 ```bash
 git clone https://github.com/yangxy/PASD.git
 cd PASD
+pip install -e .
 ```
 
 - Download SD1.5 models from [huggingface](https://huggingface.co/runwayml/stable-diffusion-v1-5) and put them into ``checkpoints/stable-diffusion-v1-5``. 
@@ -76,6 +92,7 @@ if you want to train pasd_light, use ``--use_pasd_light``.
 Download our pre-trained models [pasd](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd.zip) | [pasd_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_rrdb.zip) | [pasd_light](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light.zip) | [pasd_light_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light_rrdb.zip), and put them into ``runs/``. 
 
 ```bash
+pip install -r requirements-test.txt  # install additional dependencies
 python test_pasd.py # --use_pasd_light --use_personalized_model
 ```
 Please read the arguments in ``test_pasd.py`` carefully. We adopt the tiled vae method proposed by [multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111) to save GPU memory.

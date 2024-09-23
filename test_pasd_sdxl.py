@@ -19,10 +19,10 @@ from diffusers.utils import check_min_version
 from diffusers.utils.import_utils import is_xformers_available
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPImageProcessor, AutoTokenizer, CLIPTextModelWithProjection
 
-from pipelines.pipeline_pasd_sdxl import StableDiffusionXLControlNetPipeline
-from myutils.misc import load_dreambooth_lora
-from myutils.wavelet_color_fix import wavelet_color_fix
-#from annotator.retinaface import RetinaFaceDetection
+from pasd.pipelines.pipeline_pasd_sdxl import StableDiffusionXLControlNetPipeline
+from pasd.myutils.misc import load_dreambooth_lora
+from pasd.myutils.wavelet_color_fix import wavelet_color_fix
+#from pasd.annotator.retinaface import RetinaFaceDetection
 
 sys.path.append('PASD')
 
@@ -120,7 +120,7 @@ def load_high_level_net(args, device='cuda'):
         resnet.eval()
         return resnet, preprocess, weights.meta["categories"]
     elif args.high_level_info == "detection":
-        from annotator.yolo import YoLoDetection
+        from pasd.annotator.yolo import YoLoDetection
         yolo = YoLoDetection()
         return yolo, None, None
     elif args.high_level_info == "caption":

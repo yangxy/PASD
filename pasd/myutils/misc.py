@@ -5,7 +5,7 @@ from safetensors import safe_open
 import torch
 
 from diffusers.pipelines.stable_diffusion.convert_from_ckpt import convert_ldm_unet_checkpoint, convert_ldm_vae_checkpoint, convert_ldm_clip_checkpoint
-from myutils.convert_lora_safetensor_to_diffusers import convert_lora
+from .convert_lora_safetensor_to_diffusers import convert_lora
 
 def rand_name(length=8, suffix=''):
     name = binascii.b2a_hex(os.urandom(length)).decode('utf-8')
