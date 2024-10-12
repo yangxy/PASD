@@ -1,8 +1,11 @@
-diffusers==0.25.0
+diffusers==0.29.2
 accelerate
 transformers
-xformers
+xformers; sys_platform != 'darwin'
 git+https://github.com/XPixelGroup/BasicSR.git # for https://github.com/XPixelGroup/BasicSR/pull/650
 ultralytics
 webdataset
 open_clip_torch
+einops
+gradio<4.0.0
+pytorch_lightning

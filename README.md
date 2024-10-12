@@ -1,27 +1,21 @@
-# Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization
+# Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization (ECCV2024)
 
-[Paper](https://arxiv.org/abs/2308.14469v3)
+[Paper](https://arxiv.org/abs/2308.14469)
 
 [Tao Yang](https://cg.cs.tsinghua.edu.cn/people/~tyang)<sup>1</sup>, Rongyuan Wu<sup>2</sup>, Peiran Ren<sup>3</sup>, Xuansong Xie<sup>3</sup>, [Lei Zhang](https://www4.comp.polyu.edu.hk/~cslzhang)<sup>2</sup>  
 _<sup>1</sup>ByteDance Inc._  
 _<sup>2</sup>Department of Computing, The Hong Kong Polytechnic University_  
 _<sup>3</sup>DAMO Academy, Alibaba Group_  
 
-## Our model can do various tasks. Hope you can enjoy it.
-
-## Realistic Image SR
-<img src="samples/frog.gif" width="390px"/> <img src="samples/house.gif" width="390px"/>
-
-## Old photo restoration
-<img src="samples/629e4da70703193b.gif" width="390px" height="520"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px" height="520"/>
-
-## Personalized Stylization
-<img src="samples/000020x2.gif" width="390px"/> <img src="samples/000067x2.gif" width="390px"/>
-
-## Colorization
-<img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
-
 ## News
+(2024-9-4) [PASD-SDXL](https://huggingface.co/yangtao9009/PASD-SDXL) are now publicly available. Please have a try via ```python3 test_pasd_sdxl.py```!
+
+(2024-8-15) PASD-SDXL will be released soon. It surpasses the PASD-SD1.5 a lot. Stay tuned!
+<img src="samples/RealPhoto60_06.png" width="390px"/> <img src="samples/RealPhoto60_22.png" width="390px"/>
+<img src="samples/RealPhoto60_09.png" width="390px"/> <img src="samples/RealPhoto60_56.png" width="390px"/>
+
+(2024-7-1) Accepted by ECCV2024. A new version of our paper will be updated soon.
+
 (2024-3-18) Please have a try on our colorization model via ```python test_pasd.y --pasd_model_path runs/pasd_color/checkpoint-180000 --control_type grayscale --high_level_info caption --use_pasd_light```. You should use the noise scheduler provided in ```runs/pasd_color/scheduler``` which has been updated to ensure zero-terminal SNR in order to avoid the leaking residual signal from RGB image during training. Please read the updated paper for more details.
 
 (2024-3-18) We have updated the [paper](https://arxiv.org/abs/2308.14469v3). The [weights](https://huggingface.co/yangtao9009/PASD) and [datasets](https://huggingface.co/datasets/yangtao9009/PASD_dataset) are now available on Huggingface.
@@ -44,11 +38,41 @@ _<sup>3</sup>DAMO Academy, Alibaba Group_
 
 (2023-09-07) Upload source codes.
 
-## Usage
+## Our model can do various tasks. Hope you can enjoy it.
+
+## Realistic Image SR
+<img src="samples/frog.gif" width="390px"/> <img src="samples/house.gif" width="390px"/>
+
+## Old photo restoration
+<img src="samples/629e4da70703193b.gif" width="390px" height="520"/> <img src="samples/27d38eeb2dbbe7c9.gif" width="390px" height="520"/>
+
+## Personalized Stylization
+<img src="samples/000020x2.gif" width="390px"/> <img src="samples/000067x2.gif" width="390px"/>
+
+## Colorization
+<img src="samples/000004x2.gif" width="390px"/> <img src="samples/000080x2.gif" width="390px"/>
+
+## Installation
+### Installation using pip
+The package is not yet hosted in PyPI, so please install from github:
+```
+#pip install torch  # required by xformers, which is unavailable on Mac
+
+pip install git+https://github.com/yangxy/PASD.git
+#or: pip install git+ssh://git@github.com/yangxy/PASD.git
+```
+Download checkpoint config files from `main` branch to local directory `./checkpoints`:
+```
+wget -O - https://github.com/yangxy/PASD/archive/main.tar.gz | tar xz --strip=1 "PASD-main/checkpoints"
+```
+After this, download model pickle files to the `./checkpoints` and you'll be able to create models via `from_pretrained()`.
+
+## Development
 - Clone this repository:
 ```bash
 git clone https://github.com/yangxy/PASD.git
 cd PASD
+pip install -e .
 ```
 
 - Download SD1.5 models from [huggingface](https://huggingface.co/runwayml/stable-diffusion-v1-5) and put them into ``checkpoints/stable-diffusion-v1-5``. 
@@ -68,6 +92,7 @@ if you want to train pasd_light, use ``--use_pasd_light``.
 Download our pre-trained models [pasd](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd.zip) | [pasd_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_rrdb.zip) | [pasd_light](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light.zip) | [pasd_light_rrdb](https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/PASD/pasd_light_rrdb.zip), and put them into ``runs/``. 
 
 ```bash
+pip install -r requirements-test.txt  # install additional dependencies
 python test_pasd.py # --use_pasd_light --use_personalized_model
 ```
 Please read the arguments in ``test_pasd.py`` carefully. We adopt the tiled vae method proposed by [multidiffusion-upscaler-for-automatic1111](https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111) to save GPU memory.
@@ -83,13 +108,16 @@ If the default setting does not yield good results, try different ``--pasd_model
 python gradio_pasd.py
 ```
 
+## Main idea
+<img src="samples/pasd_arch.png" width="780px"/>
+
 ## Citation
 If our work is useful for your research, please consider citing:
 
     @inproceedings{yang2023pasd,
 	    title={Pixel-Aware Stable Diffusion for Realistic Image Super-Resolution and Personalized Stylization},
 	    author={Tao Yang, Rongyuan Wu, Peiran Ren, Xuansong Xie, and Lei Zhang},
-	    booktitle={arXiv:2308.14469v3},
+	    booktitle={The European Conference on Computer Vision (ECCV) 2024},
 	    year={2023}
     }
 
